@@ -1,0 +1,99 @@
+<view class="container">
+  <view class="header">
+    <view class="header-title">📊 球队统计</view>
+    <view class="header-actions">
+      <view class="share-btn" bindtap="shareToTimeline">
+        <text>📤 分享朋友圈</text>
+      </view>
+    </view>
+  </view>
+  
+  <view class="stats-overview">
+    <view class="overview-card main">
+      <view class="overview-icon">⚽</view>
+      <view class="overview-info">
+        <view class="overview-value">{{teamStats.totalMatches}}</view>
+        <view class="overview-label">今年比赛场次</view>
+      </view>
+    </view>
+    <view class="overview-card">
+      <view class="overview-icon">👥</view>
+      <view class="overview-info">
+        <view class="overview-value">{{teamStats.totalPlayers}}</view>
+        <view class="overview-label">在册球员</view>
+      </view>
+    </view>
+    <view class="overview-card">
+      <view class="overview-icon">✓</view>
+      <view class="overview-info">
+        <view class="overview-value">{{teamStats.winRate}}%</view>
+        <view class="overview-label">胜率</view>
+      </view>
+    </view>
+  </view>
+  
+  <view class="section-card">
+    <view class="section-title">🏆 比赛战绩</view>
+    <view class="match-result">
+      <view class="result-item win">
+        <view class="result-num">{{teamStats.winCount}}</view>
+        <view class="result-label">胜利</view>
+      </view>
+      <view class="result-item draw">
+        <view class="result-num">{{teamStats.drawCount}}</view>
+        <view class="result-label">平局</view>
+      </view>
+      <view class="result-item loss">
+        <view class="result-num">{{teamStats.lossCount}}</view>
+        <view class="result-label">失利</view>
+      </view>
+    </view>
+  </view>
+  
+  <view class="section-card">
+    <view class="section-title">📍 比赛场地分布</view>
+    <view class="location-list">
+      <view class="location-item" wx:for="{{teamStats.locations}}" wx:key="name">
+        <view class="location-info">
+          <view class="location-name">{{item.name}}</view>
+          <view class="location-count">举办 {{item.count}} 场</view>
+        </view>
+        <view class="location-progress">
+          <view class="progress-bar" style="width: {{(item.count / teamStats.totalMatches) * 100}}%"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <view class="section-card">
+    <view class="section-title">📈 出勤统计</view>
+    <view class="attendance-grid">
+      <view class="attendance-item">
+        <view class="attendance-value">{{teamStats.avgRegistered}}</view>
+        <view class="attendance-label">平均每场报名</view>
+      </view>
+      <view class="attendance-item">
+        <view class="attendance-value">{{teamStats.avgAttendanceRate}}%</view>
+        <view class="attendance-label">平均出勤率</view>
+      </view>
+      <view class="attendance-item">
+        <view class="attendance-value">{{teamStats.totalRegistrations}}</view>
+        <view class="attendance-label">累计报名人次</view>
+      </view>
+    </view>
+  </view>
+  
+  <view class="section-card" wx:if="{{playerRanking.length > 0}}">
+    <view class="section-title">🥇 出勤排行榜</view>
+    <view class="ranking-list">
+      <view class="ranking-item" wx:for="{{playerRanking}}" wx:key="name">
+        <view class="rank-badge" style="background: {{getRankColor(item.rank)}}">{{item.rank}}</view>
+        <view class="player-info">
+          <view class="player-name">{{item.name}}</view>
+          <view class="player-detail">出勤 {{item.attendance}}/{{item.total}} 场</view>
+        </view>
+        <view class="player-rate">{{item.rate}}%</view>
+      </view>
+    </view>
+  </view>
+</view>

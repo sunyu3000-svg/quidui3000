@@ -1,0 +1,40 @@
+<view class="container">
+  <view class="header">
+    <view class="header-title">📋 比赛管理</view>
+    <view class="header-subtitle">共 {{matches.length}} 场比赛</view>
+  </view>
+  
+  <view class="match-list">
+    <view class="match-card" wx:for="{{matches}}" wx:key="id">
+      <view class="match-header">
+        <view class="status-badge {{item.status}}">{{item.status === 'finished' ? '已结束' : '未开始'}}</view>
+        <view class="match-actions">
+          <view class="action-btn edit" bindtap="editMatch" data-id="{{item.id}}">编辑</view>
+          <view class="action-btn delete" bindtap="deleteMatch" data-id="{{item.id}}">删除</view>
+        </view>
+      </view>
+      
+      <view class="match-info">
+        <view class="match-teams">
+          <view class="team">{{item.homeTeam}}</view>
+          <view class="score">
+            <text wx:if="{{item.status === 'finished'}}">{{item.homeScore}} - {{item.awayScore}}</text>
+            <text wx:else>VS</text>
+          </view>
+          <view class="team">{{item.awayTeam}}</view>
+        </view>
+        
+        <view class="match-meta">
+          <text class="meta-item">📅 {{item.date}} {{item.time}}</text>
+          <text class="meta-item">📍 {{item.locationName}}</text>
+        </view>
+      </view>
+    </view>
+    
+    <view class="empty-state" wx:if="{{matches.length === 0}}">
+      <view class="empty-icon">⚽</view>
+      <view class="empty-text">暂无比赛记录</view>
+      <view class="empty-sub">点击右上角发布新比赛</view>
+    </view>
+  </view>
+</view>

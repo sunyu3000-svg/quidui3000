@@ -1,0 +1,14 @@
+{
+  "libVersion": "3.16.0",
+  "projectname": "qiudui",
+  "setting": {
+    "urlCheck": false,
+    "coverView": true,
+    "lazyloadPlaceholderEnable": false,
+    "skylineRenderEnable": false,
+    "preloadBackgroundData": false,
+    "autoAudits": false,
+    "showShadowRootInWxmlPanel": false,
+    "compileHotReLoad": false
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/profile/profile",
+    "pages/matches/matches",
+    "pages/register/register",
+    "pages/stats/stats",
+    "pages/admin/index",
+    "pages/admin/publish-match",
+    "pages/admin/match-list",
+    "pages/admin/player-list"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "厦门天涯足球队",
+    "navigationBarBackgroundColor": "#dc2626",
+    "backgroundColor": "#f5f5f5"
+  },
+  "tabBar": {
+    "color": "#8a8a8a",
+    "selectedColor": "#dc2626",
+    "borderStyle": "white",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页" },
+      { "pagePath": "pages/matches/matches", "text": "比赛" },
+      { "pagePath": "pages/register/register", "text": "报名" },
+      { "pagePath": "pages/profile/profile", "text": "我的" }
+    ]
+  }
+}

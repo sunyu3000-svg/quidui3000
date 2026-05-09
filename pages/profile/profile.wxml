@@ -1,0 +1,91 @@
+<view class="container">
+  <view class="profile-card">
+    <view class="avatar-section">
+      <view class="avatar">{{myProfile.name ? myProfile.name[0] : userInfo.name[0]}}</view>
+      <view class="number-badge">{{myProfile.number || userInfo.number}}</view>
+    </view>
+    <view class="info-section">
+      <view class="name">{{myProfile.name || userInfo.name}}</view>
+      <view class="position">{{myProfile.position || userInfo.position}}</view>
+    </view>
+    <button class="edit-btn" bindtap="goToEdit">编辑</button>
+  </view>
+  
+  <view class="stats-card">
+    <view class="stats-title">📊 个人出勤</view>
+    <view class="stats-grid">
+      <view class="stat-item">
+        <view class="stat-value">{{myStats.attendance}}</view>
+        <view class="stat-label">出勤场次</view>
+      </view>
+      <view class="stat-item">
+        <view class="stat-value">{{myStats.leave}}</view>
+        <view class="stat-label">请假次数</view>
+      </view>
+      <view class="stat-item">
+        <view class="stat-value">{{myStats.rate}}%</view>
+        <view class="stat-label">出勤率</view>
+      </view>
+    </view>
+  </view>
+  
+  <view class="info-card">
+    <view class="info-title">联系方式</view>
+    <view class="info-row">
+      <view class="info-label">📱 手机</view>
+      <view class="info-value">{{myProfile.phone || '未填写'}}</view>
+    </view>
+    <view class="info-row">
+      <view class="info-label">📐 身高</view>
+      <view class="info-value">{{myProfile.height ? myProfile.height + ' cm' : '未填写'}}</view>
+    </view>
+    <view class="info-row">
+      <view class="info-label">⚖️ 体重</view>
+      <view class="info-value">{{myProfile.weight ? myProfile.weight + ' kg' : '未填写'}}</view>
+    </view>
+    <view class="info-row">
+      <view class="info-label">🎂 生日</view>
+      <view class="info-value">{{myProfile.birthday || '未填写'}}</view>
+    </view>
+    <view class="info-row">
+      <view class="info-label">🦶 擅长脚</view>
+      <view class="info-value">{{footText || '未填写'}}</view>
+    </view>
+  </view>
+  
+  <view class="bio-card" wx:if="{{myProfile.bio}}">
+    <view class="bio-title">个人简介</view>
+    <view class="bio-content">{{myProfile.bio}}</view>
+  </view>
+  
+  <view class="menu-card">
+    <view class="menu-title">功能菜单</view>
+    <view class="menu-list">
+      <view class="menu-item" bindtap="goToEdit">
+        <view class="menu-icon">✏️</view>
+        <view class="menu-text">编辑资料</view>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="goToMatches">
+        <view class="menu-icon">🏆</view>
+        <view class="menu-text">我的比赛</view>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="goToRegister">
+        <view class="menu-icon">📝</view>
+        <view class="menu-text">比赛报名</view>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="goToStats">
+        <view class="menu-icon">📊</view>
+        <view class="menu-text">球队统计</view>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="checkAdmin">
+        <view class="menu-icon">🔐</view>
+        <view class="menu-text">管理入口</view>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+  </view>
+</view>

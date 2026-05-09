@@ -1,0 +1,50 @@
+<view class="container">
+  <view class="logo-section">
+    <view class="logo">⚽</view>
+    <view class="title">厦门天涯足球队</view>
+    <view class="subtitle">团结拼搏，共创辉煌</view>
+  </view>
+  
+  <view class="quick-actions">
+    <view class="action-card" bindtap="goToMatches">
+      <view class="action-icon">🏆</view>
+      <view class="action-title">比赛日程</view>
+      <view class="action-desc">查看近期比赛</view>
+    </view>
+    <view class="action-card" bindtap="goToRegister">
+      <view class="action-icon">📝</view>
+      <view class="action-title">报名参赛</view>
+      <view class="action-desc">报名下场比赛</view>
+    </view>
+  </view>
+  
+  <view class="next-match" wx:if="{{nextMatch}}">
+    <view class="section-title">📅 下一场比赛</view>
+    <view class="match-preview">
+      <view class="match-teams">
+        <view class="team">{{nextMatch.homeTeam}}</view>
+        <view class="vs">VS</view>
+        <view class="team">{{nextMatch.awayTeam}}</view>
+      </view>
+      <view class="match-info">
+        <text class="match-date">{{nextMatch.date}} {{nextMatch.time}}</text>
+        <text class="match-location">📍 {{nextMatch.locationName}}</text>
+      </view>
+    </view>
+  </view>
+  
+  <view class="stats-section">
+    <view class="stat-item">
+      <view class="stat-value">{{stats.playerCount}}</view>
+      <view class="stat-label">在册球员</view>
+    </view>
+    <view class="stat-item">
+      <view class="stat-value">{{stats.matchCount}}</view>
+      <view class="stat-label">比赛场次</view>
+    </view>
+    <view class="stat-item">
+      <view class="stat-value">{{stats.registeredCount}}</view>
+      <view class="stat-label">已报名</view>
+    </view>
+  </view>
+</view>

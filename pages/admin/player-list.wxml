@@ -1,0 +1,37 @@
+<view class="container">
+  <view class="header">
+    <view class="header-title">👥 球员管理</view>
+    <view class="header-subtitle">共 {{players.length}} 名注册球员</view>
+  </view>
+  
+  <view class="player-list">
+    <view class="player-card" wx:for="{{players}}" wx:key="name">
+      <view class="player-avatar">{{item.name[0]}}</view>
+      <view class="player-info">
+        <view class="player-header">
+          <view class="player-name">{{item.name}}</view>
+          <view class="player-number">{{item.number}}号</view>
+        </view>
+        <view class="player-meta">
+          <text class="meta-tag">{{item.position}}</text>
+          <text class="meta-tag">{{footText(item.foot)}}</text>
+        </view>
+        <view class="player-contact" wx:if="{{item.phone}}">
+          <text class="contact-icon">📱</text>
+          <text class="contact-text">{{item.phone}}</text>
+        </view>
+      </view>
+      <view class="player-action">
+        <view class="call-btn" bindtap="callPlayer" data-phone="{{item.phone}}">
+          <text>📞</text>
+        </view>
+      </view>
+    </view>
+    
+    <view class="empty-state" wx:if="{{players.length === 0}}">
+      <view class="empty-icon">👥</view>
+      <view class="empty-text">暂无注册球员</view>
+      <view class="empty-sub">球员需要自行注册资料</view>
+    </view>
+  </view>
+</view>

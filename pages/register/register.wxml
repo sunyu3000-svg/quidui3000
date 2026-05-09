@@ -1,0 +1,151 @@
+<view class="container">
+  <view class="header">
+    <view class="header-content">
+      <view class="header-title">比赛报名</view>
+      <view class="header-subtitle">下场对阵：{{nextMatch.homeTeam}} VS {{nextMatch.awayTeam}}</view>
+    </view>
+    <view class="share-btn" bindtap="shareToChat">📤 分享</view>
+  </view>
+  
+  <view class="match-info-card">
+    <view class="info-row">
+      <view class="info-icon">📅</view>
+      <view class="info-content">
+        <view class="info-label">比赛时间</view>
+        <view class="info-value">{{nextMatch.date}} {{nextMatch.time}}</view>
+      </view>
+    </view>
+    <view class="info-row">
+      <view class="info-icon">📍</view>
+      <view class="info-content">
+        <view class="info-label">比赛地点</view>
+        <view class="info-value">{{nextMatch.locationName || location.name}}</view>
+        <view class="info-sub">{{nextMatch.locationAddress || location.address}}</view>
+      </view>
+    </view>
+  </view>
+  
+  <view class="register-section">
+    <view class="section-title">
+      <text class="title-text">我的状态</text>
+    </view>
+    
+    <view class="status-card" wx:if="{{userStatus === 'registered'}}">
+      <view class="status-badge registered">✓ 已报名</view>
+      <view class="status-actions">
+        <button class="status-btn leave" bindtap="toggleLeave">请假</button>
+        <button class="status-btn cancel" bindtap="cancelRegistration">取消报名</button>
+      </view>
+    </view>
+    
+    <view class="status-card" wx:elif="{{userStatus === 'leave'}}">
+      <view class="status-badge leave">🚫 已请假</view>
+      <view class="status-actions">
+        <button class="status-btn register" bindtap="toggleLeave">取消请假</button>
+      </view>
+    </view>
+    
+    <view class="status-card" wx:else>
+      <view class="status-badge not-registered">❓ 未报名</view>
+      <view class="status-actions">
+        <button class="status-btn register primary" bindtap="register">立即报名</button>
+      </view>
+    </view>
+  </view>
+  
+  <view class="players-section">
+    <view class="section-title">
+      <text class="title-text">已报名球员</text>
+      <view class="section-actions" wx:if="{{isAdmin}}">
+        <button class="add-btn" bindtap="showAddPlayerModal">+ 添加球员</button>
+      </view>
+      <text class="title-sub">{{registeredPlayers.length}}/22</text>
+    </view>
+    
+    <view class="players-list">
+      <view class="player-card" wx:for="{{registeredPlayers}}" wx:key="id">
+        <view class="player-avatar">
+          <text class="avatar-text">{{item.name[0]}}</text>
+        </view>
+        <view class="player-info">
+          <view class="player-name">{{item.name}}</view>
+          <view class="player-meta">
+            <text class="meta-tag number">{{item.number}}号</text>
+            <text class="meta-tag position">{{item.position}}</text>
+          </view>
+        </view>
+        <view class="player-actions">
+          <view class="player-status" wx:if="{{item.name === userInfo.name}}">
+            <text class="my-tag">我</text>
+          </view>
+          <view class="admin-actions" wx:if="{{isAdmin && item.name !== userInfo.name}}">
+            <view class="delete-btn" bindtap="removePlayer" data-id="{{item.id}}">删除</view>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <view class="empty-state" wx:if="{{registeredPlayers.length === 0}}">
+      <view class="empty-icon">👥</view>
+      <view class="empty-text">暂无报名人员</view>
+      <view class="empty-sub">成为第一个报名的人吧！</view>
+    </view>
+  </view>
+  
+  <view class="leave-section" wx:if="{{leavePlayers.length > 0}}">
+    <view class="section-title">
+      <text class="title-text">请假球员</text>
+      <text class="title-sub">{{leavePlayers.length}}人</text>
+    </view>
+    
+    <view class="players-list">
+      <view class="player-card leave" wx:for="{{leavePlayers}}" wx:key="id">
+        <view class="player-avatar">
+          <text class="avatar-text">{{item.name[0]}}</text>
+        </view>
+        <view class="player-info">
+          <view class="player-name">{{item.name}}</view>
+          <view class="player-meta">
+            <text class="meta-tag number">{{item.number}}号</text>
+            <text class="meta-tag position">{{item.position}}</text>
+          </view>
+        </view>
+        <view class="player-actions">
+          <view class="player-status" wx:if="{{item.name === userInfo.name}}">
+            <text class="my-tag">我</text>
+          </view>
+          <view class="leave-badge">请假</view>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <view class="modal-overlay" wx:if="{{showAddModal}}" bindtap="hideAddPlayerModal">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">添加报名球员</text>
+        <view class="modal-close" bindtap="hideAddPlayerModal">✕</view>
+      </view>
+      <view class="modal-body">
+        <view class="form-item">
+          <view class="form-label">球员姓名</view>
+          <input class="form-input" placeholder="请输入姓名" value="{{newPlayer.name}}" bindinput="onAddPlayerInput" data-field="name" />
+        </view>
+        <view class="form-item">
+          <view class="form-label">球衣号码</view>
+          <input class="form-input" type="number" placeholder="请输入号码" value="{{newPlayer.number}}" bindinput="onAddPlayerInput" data-field="number" />
+        </view>
+        <view class="form-item">
+          <view class="form-label">场上位置</view>
+          <picker class="form-picker" mode="selector" range="{{positions}}" bindchange="onPositionChange">
+            <view class="picker-value">{{newPlayer.position || '请选择位置'}}</view>
+          </picker>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="modal-btn cancel" bindtap="hideAddPlayerModal">取消</button>
+        <button class="modal-btn confirm" bindtap="addPlayer">确认添加</button>
+      </view>
+    </view>
+  </view>
+</view>
