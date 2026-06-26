@@ -1,0 +1,174 @@
+<view class="container">
+  <view class="user-section">
+    <view wx:if="{{!hasUserInfo}}" class="auth-area" bindtap="onAuthTap">
+      <view class="avatar-circle">
+        <view class="avatar-placeholder">
+          <text class="avatar-icon">登</text>
+        </view>
+      </view>
+      <text class="user-name">点击授权登录</text>
+    </view>
+    <view wx:else class="avatar-area">
+      <button 
+        class="avatar-btn" 
+        open-type="chooseAvatar" 
+        bindchooseavatar="onChooseAvatar"
+      >
+        <view class="avatar-circle">
+          <image wx:if="{{userInfo && userInfo.avatarUrl}}" class="avatar-img" src="{{userInfo.avatarUrl}}" mode="aspectFill" />
+          <view wx:else class="avatar-placeholder">
+            <text class="avatar-icon">{{userInfo && userInfo.nickName ? userInfo.nickName.charAt(0) : '用'}}</text>
+          </view>
+        </view>
+      </button>
+      <view class="nickname-area">
+        <text 
+          wx:if="{{userInfo && userInfo.nickName && userInfo.nickName !== ''}}" 
+          class="nickname-text"
+          bindtap="onNicknameTap"
+        >{{userInfo.nickName}}</text>
+        <view wx:else class="nickname-placeholder-wrap">
+          <text class="nickname-placeholder-text">点击设置昵称</text>
+        </view>
+        <text class="edit-icon" bindtap="onNicknameTap">✏️</text>
+      </view>
+      
+      <!-- 昵称编辑弹窗 -->
+      <view wx:if="{{showNicknameModal}}" class="modal-overlay" bindtap="hideNicknameModal">
+        <view class="modal-content" catchtap="stopPropagation">
+          <view class="modal-title">修改昵称</view>
+          <input 
+            class="modal-input" 
+            type="text" 
+            value="{{editNickname}}" 
+            placeholder="请输入昵称"
+            focus="{{showNicknameModal}}"
+            bindblur="onNicknameEditBlur"
+            bindconfirm="saveNickname"
+          />
+          <view class="modal-buttons">
+            <button class="modal-btn cancel-btn" bindtap="hideNicknameModal">取消</button>
+            <button class="modal-btn confirm-btn" bindtap="saveNickname">保存</button>
+          </view>
+        </view>
+      </view>
+
+      <!-- 添加队长用户选择弹窗 -->
+      <view wx:if="{{showAddAdminModal}}" class="modal-overlay" bindtap="hideAddAdminModal">
+        <view class="modal-content user-select-modal" catchtap="stopPropagation">
+          <view class="modal-title">选择用户添加为队长</view>
+          <scroll-view scroll-y class="user-list">
+            <view 
+              class="user-item" 
+              wx:for="{{userList}}" 
+              wx:key="_id"
+              bindtap="selectUserToAdd"
+              data-nickname="{{item.nickName}}"
+            >
+              <image wx:if="{{item.avatarUrl}}" class="user-avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
+              <view wx:else class="user-avatar-placeholder">
+                <text>{{item.nickName ? item.nickName.charAt(0) : '用'}}</text>
+              </view>
+              <text class="user-name">{{item.nickName || '未知用户'}}</text>
+            </view>
+          </scroll-view>
+          <view class="modal-buttons">
+            <button class="modal-btn cancel-btn" bindtap="hideAddAdminModal">取消</button>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="admin-tag" wx:if="{{isAdmin}}">
+      <text class="admin-icon">👑</text>
+      <text>{{isSuperAdmin ? '超级管理员' : '管理员'}}</text>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="form-title">个人信息</view>
+    
+    <view wx:if="{{!hasUserInfo}}" class="login-hint-container">
+      <view class="login-hint">
+        <text class="hint-icon">👆</text>
+        <text class="hint-text">请先点击上方头像区域进行微信授权登录</text>
+      </view>
+    </view>
+    
+    <view wx:else>
+      <view class="form-item">
+        <text class="form-label">球衣号码</text>
+        <input class="form-input" type="number" placeholder="请输入球衣号码" value="{{formData.number}}" bindinput="onNumberInput" />
+      </view>
+      
+      <view class="form-item">
+        <text class="form-label">场上位置</text>
+        <picker mode="selector" range="{{positionOptions}}" bindchange="onPositionChange" value="{{positionOptions.indexOf(formData.position)}}">
+          <view class="picker-content">
+            <text wx:if="{{formData.position}}">{{formData.position}}</text>
+            <text wx:else class="placeholder">请选择场上位置</text>
+          </view>
+        </picker>
+      </view>
+      
+      <view class="form-item">
+        <text class="form-label">球衣尺码</text>
+        <picker mode="selector" range="{{sizeOptions}}" bindchange="onSizeChange" value="{{sizeOptions.indexOf(formData.size)}}">
+          <view class="picker-content">
+            <text wx:if="{{formData.size}}">{{formData.size}}</text>
+            <text wx:else class="placeholder">请选择球衣尺码</text>
+          </view>
+        </picker>
+      </view>
+      
+      <button class="save-btn" bindtap="saveData">保存</button>
+    </view>
+  </view>
+
+  <view class="admin-section" wx:if="{{isSuperAdmin}}">
+    <view class="admin-header">
+      <text class="admin-title">👑 队长管理</text>
+      <button class="add-admin-btn" bindtap="addAdmin">添加队长</button>
+    </view>
+    <view class="admin-list" wx:if="{{admins.length > 0}}">
+      <view class="admin-item" wx:for="{{admins}}" wx:key="_id">
+        <view class="admin-info">
+          <text class="admin-name">{{item.nickName || '未知'}}</text>
+          <text class="admin-role">{{item.role === 'super' ? '👑 超级管理员' : '⚽ 队长'}}</text>
+        </view>
+        <view class="admin-actions">
+          <button 
+            class="delete-admin-btn" 
+            wx:if="{{item.role !== 'super'}}" 
+            bindtap="deleteAdmin" 
+            data-id="{{item._id}}" 
+            data-nickname="{{item.nickName}}"
+          >删除</button>
+          <text wx:else class="cannot-delete">不可删除</text>
+        </view>
+      </view>
+    </view>
+    <view class="admin-empty" wx:else>
+      <text>暂无其他管理员，点击上方按钮添加</text>
+    </view>
+    <view class="admin-tips">
+      <view class="tips-title">
+        <text class="icon">💡</text>
+        <text>使用说明</text>
+      </view>
+      <view class="tips-list">
+        <view class="tips-item">
+          <text class="number">1</text>
+          <text>超级管理员可以添加和删除队长</text>
+        </view>
+        <view class="tips-item">
+          <text class="number">2</text>
+          <text>队长拥有记账管理权限</text>
+        </view>
+        <view class="tips-item">
+          <text class="number">3</text>
+          <text>普通成员可以报名活动和完善资料</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

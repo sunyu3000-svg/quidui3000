@@ -1,0 +1,720 @@
+.container {
+  padding: 30rpx;
+  padding-bottom: 40rpx;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.balance-card {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-radius: 24rpx;
+  padding: 50rpx 40rpx;
+  margin-bottom: 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.balance-title {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 16rpx;
+}
+
+.balance-amount {
+  font-size: 64rpx;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 12rpx;
+}
+
+.balance-hint {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 8rpx 24rpx;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 20rpx;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.action-btn {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 44rpx;
+  font-size: 32rpx;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn.income {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.action-btn.expense {
+  background-color: #f59e0b;
+  color: #ffffff;
+}
+
+.records-card {
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin-bottom: 24rpx;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.record-count {
+  font-size: 24rpx;
+  color: #9ca3af;
+}
+
+.records-list {
+  max-height: 600rpx;
+  overflow-y: auto;
+}
+
+.record-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.record-item:last-child {
+  border-bottom: none;
+}
+
+.record-icon {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-right: 20rpx;
+}
+
+.record-icon.income {
+  background-color: #d1fae5;
+  color: #10b981;
+}
+
+.record-icon.expense {
+  background-color: #fed7aa;
+  color: #f59e0b;
+}
+
+.record-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.record-title {
+  font-size: 28rpx;
+  color: #1f2937;
+  margin-bottom: 8rpx;
+}
+
+.record-time {
+  font-size: 24rpx;
+  color: #9ca3af;
+}
+
+.record-amount {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.record-amount.income {
+  color: #10b981;
+}
+
+.record-amount.expense {
+  color: #f59e0b;
+}
+
+.record-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-left: 16rpx;
+}
+
+.record-actions .action-btn {
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  border: none;
+  background: none;
+  flex: none;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.record-actions .action-btn.edit {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.record-actions .action-btn.delete {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.tips-card {
+  background-color: #fef3c7;
+  border-radius: 24rpx;
+  padding: 30rpx;
+}
+
+.tips-header {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #92400e;
+  margin-bottom: 20rpx;
+}
+
+.tips-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.tip-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.tip-number {
+  width: 40rpx;
+  height: 40rpx;
+  background-color: #f59e0b;
+  color: #ffffff;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.tip-item text {
+  font-size: 26rpx;
+  color: #78350f;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60rpx 0;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 16rpx;
+}
+
+/* 普通用户统计报表 */
+.stats-card {
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  margin-bottom: 24rpx;
+  overflow: hidden;
+}
+
+.stats-header {
+  padding: 30rpx;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.stats-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.stats-content {
+  padding: 30rpx;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.stat-label {
+  font-size: 26rpx;
+  color: #6b7280;
+}
+
+.stat-value {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.stat-value.income {
+  color: #10b981;
+}
+
+.stat-value.expense {
+  color: #f59e0b;
+}
+
+.stat-value.balance {
+  color: #dc2626;
+}
+
+.stat-row-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 20rpx 0;
+}
+
+/* 时间线样式 */
+.timeline-section {
+  padding: 30rpx;
+  border-top: 1px solid #f3f4f6;
+}
+
+.timeline-header {
+  margin-bottom: 20rpx;
+}
+
+.timeline-title {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #374151;
+}
+
+.timeline-list {
+  position: relative;
+}
+
+.timeline-item {
+  display: flex;
+  margin-bottom: 30rpx;
+  position: relative;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-dot {
+  width: 12rpx;
+  height: 12rpx;
+  background-color: #10b981;
+  border-radius: 50%;
+  margin-right: 20rpx;
+  margin-top: 10rpx;
+  flex-shrink: 0;
+}
+
+.timeline-dot.income {
+  background-color: #10b981;
+}
+
+.timeline-dot.expense {
+  background-color: #f59e0b;
+}
+
+.timeline-content {
+  flex: 1;
+  background-color: #f9fafb;
+  border-radius: 12rpx;
+  padding: 20rpx;
+}
+
+.timeline-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.timeline-title-text {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.timeline-amount {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.timeline-amount.income {
+  color: #10b981;
+}
+
+.timeline-amount.expense {
+  color: #f59e0b;
+}
+
+.timeline-time {
+  font-size: 24rpx;
+  color: #9ca3af;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #9ca3af;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 560rpx;
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  padding: 40rpx;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #1f2937;
+  text-align: center;
+  margin-bottom: 40rpx;
+}
+
+.form-item {
+  margin-bottom: 32rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  color: #374151;
+  margin-bottom: 12rpx;
+}
+
+.form-input {
+  width: 100%;
+  height: 80rpx;
+  border: 1px solid #d1d5db;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  box-sizing: border-box;
+}
+
+.quick-options {
+  margin-bottom: 30rpx;
+  padding: 24rpx;
+  background-color: #f0fdf4;
+  border-radius: 16rpx;
+}
+
+.quick-title {
+  font-size: 26rpx;
+  color: #059669;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.quick-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.quick-btn {
+  padding: 12rpx 24rpx;
+  background-color: #ffffff;
+  border: 1px solid #86efac;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: #059669;
+}
+
+.quick-btn::after {
+  border: none;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 40rpx;
+}
+
+.modal-btn {
+  flex: 1;
+  height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  border: none;
+}
+
+.modal-btn.cancel {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.modal-btn.confirm {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+/* 放鸽子管理按钮 */
+.action-btn.dove {
+  background-color: #8b5cf6;
+  color: #ffffff;
+  font-weight: 500;
+  letter-spacing: 2rpx;
+}
+
+/* 活动列表 */
+.activity-list {
+  max-height: 200rpx;
+  overflow-y: auto;
+}
+
+.activity-item {
+  padding: 20rpx;
+  border: 1px solid #e5e7eb;
+  border-radius: 12rpx;
+  margin-bottom: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.activity-info {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.activity-title {
+  font-size: 28rpx;
+  color: #374151;
+  font-weight: 500;
+}
+
+.activity-date {
+  font-size: 24rpx;
+  color: #9ca3af;
+}
+
+.activity-item.selected {
+  background-color: #f3f4f6;
+  border-color: #dc2626;
+}
+
+.activity-item.selected .activity-title {
+  color: #dc2626;
+}
+
+.activity-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 放鸽子用户列表 - 网格布局 */
+.signups-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  padding: 10rpx 0;
+  max-height: 500rpx;
+  overflow-y: auto;
+}
+
+.signup-item {
+  width: calc(16.666% - 17rpx);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10rpx;
+  border-radius: 12rpx;
+  transition: all 0.2s ease;
+}
+
+.signup-item.selected {
+  background-color: #fffbeb;
+}
+
+.signup-item.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.signup-item.disabled .signup-avatar {
+  filter: grayscale(100%);
+}
+
+.avatar-wrapper {
+  position: relative;
+  margin-bottom: 8rpx;
+}
+
+.signup-avatar {
+  width: 70rpx;
+  height: 70rpx;
+  border-radius: 50%;
+  border: 3rpx solid #f3f4f6;
+}
+
+.signup-avatar.default-avatar {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.signup-item.selected .signup-avatar {
+  border-color: #f59e0b;
+}
+
+.avatar-text {
+  font-size: 24rpx;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.checkbox-overlay {
+  position: absolute;
+  bottom: -4rpx;
+  right: -4rpx;
+  background-color: #f59e0b;
+  color: #ffffff;
+  font-size: 18rpx;
+  padding: 4rpx 8rpx;
+  border-radius: 10rpx;
+  font-weight: bold;
+  border: 2rpx solid #ffffff;
+}
+
+.signup-name {
+  font-size: 20rpx;
+  color: #6b7280;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 4rpx;
+}
+
+.signup-item.selected .signup-name {
+  color: #f59e0b;
+  font-weight: bold;
+}
+
+.dove-badge {
+  background-color: #f59e0b;
+  color: #ffffff;
+  font-size: 16rpx;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+  font-weight: bold;
+}
+
+.disabled-badge {
+  background-color: #6b7280;
+  color: #ffffff;
+  font-size: 16rpx;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+  font-weight: bold;
+}
+
+/* 日期选择器按钮样式 */
+.picker-btn {
+  padding: 12rpx 24rpx;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: #374151;
+  min-width: 160rpx;
+  text-align: center;
+}
+
+.picker-btn:active {
+  background-color: #e5e7eb;
+}
+
+/* 日期筛选样式 */
+.filter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12rpx;
+}
+
+.filter-btn {
+  padding: 12rpx 24rpx;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: #374151;
+  min-width: 160rpx;
+}
+
+.filter-btn-hover {
+  background-color: #e5e7eb;
+}
+
+.filter-btn::after {
+  border: none;
+}
+
+/* 活动状态标签 */
+.activity-status {
+  float: right;
+  font-size: 20rpx;
+  color: #10b981;
+  background-color: #d1fae5;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  font-weight: bold;
+}

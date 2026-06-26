@@ -1,0 +1,34 @@
+<view class="calendar-modal" wx:if="{{show}}" bindtap="close">
+  <view class="calendar-content" catchtap="stopPropagation">
+    <view class="calendar-header">
+      <view class="header-btn" bindtap="prevMonth">‹</view>
+      <view class="header-title">{{currentYear}}年{{currentMonth}}月</view>
+      <view class="header-btn" bindtap="nextMonth">›</view>
+    </view>
+    
+    <view class="calendar-weekdays">
+      <view class="weekday {{item === '日' || item === '六' ? 'weekend' : ''}}" wx:for="{{weekDays}}" wx:key="index">
+        {{item}}
+      </view>
+    </view>
+    
+    <view class="calendar-days">
+      <view 
+        class="day-item" 
+        wx:for="{{days}}" 
+        wx:key="index"
+        bindtap="selectDate"
+        data-date="{{item.date}}"
+      >
+        <view wx:if="{{item.empty}}" class="empty-day"></view>
+        <view 
+          wx:else 
+          class="day-content {{item.isToday ? 'today' : ''}} {{item.isSelected ? 'selected' : ''}} {{item.isWeekend ? 'weekend-day' : ''}}"
+        >
+          <text class="day-num">{{item.day}}</text>
+          <text wx:if="{{item.festival}}" class="festival">{{item.festival}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

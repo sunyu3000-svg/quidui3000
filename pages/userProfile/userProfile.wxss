@@ -1,0 +1,433 @@
+.user-profile-container {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding-bottom: 40rpx;
+}
+
+.user-header {
+  background-color: #fff;
+  padding: 40rpx 30rpx;
+  display: flex;
+  align-items: flex-start;
+  gap: 30rpx;
+}
+
+.user-avatar-section {
+  position: relative;
+}
+
+.user-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  overflow: hidden;
+}
+
+.user-avatar image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.default-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.avatar-text {
+  font-size: 48rpx;
+  color: #fff;
+  font-weight: bold;
+}
+
+.share-btn {
+  position: absolute;
+  top: 0;
+  right: -20rpx;
+  width: 50rpx;
+  height: 50rpx;
+  background-color: #07c160;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+.share-btn::after {
+  border: none;
+}
+
+.share-icon {
+  font-size: 24rpx;
+  color: #fff;
+}
+
+.user-names {
+  flex: 1;
+}
+
+.nick-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.label {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.value {
+  font-size: 26rpx;
+  color: #333;
+}
+
+.remark-row {
+  margin-top: 8rpx;
+}
+
+.remark-value {
+  color: #576b95;
+  text-decoration: underline;
+}
+
+.stats-section {
+  background-color: #fff;
+  padding: 30rpx;
+  margin-top: 2rpx;
+}
+
+.like-numbers {
+  display: flex;
+  justify-content: space-around;
+}
+
+.like-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.like-item .number {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.like-item .label {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 4rpx;
+}
+
+.activity-stats {
+  background-color: #fff;
+  padding: 30rpx;
+  margin-top: 20rpx;
+  display: flex;
+  justify-content: space-around;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-number {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
+.action-section {
+  background-color: #fff;
+  padding: 40rpx 30rpx;
+  margin-top: 20rpx;
+  display: flex;
+  justify-content: center;
+  gap: 80rpx;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.heart-icon {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 50rpx;
+  transition: all 0.3s ease;
+}
+
+.like-btn.liked .heart-icon {
+  background-color: #ffebee;
+}
+
+.btn-text {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.like-btn.liked .btn-text {
+  color: #f44336;
+}
+
+.impression-btn .heart-icon {
+  font-size: 40rpx;
+}
+
+.common-activities-section {
+  background-color: #fff;
+  padding: 30rpx;
+  margin-top: 20rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 20rpx;
+}
+
+.common-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.common-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx;
+  background-color: #f9f9f9;
+  border-radius: 12rpx;
+}
+
+.common-text {
+  font-size: 28rpx;
+  color: #333;
+  flex: 1;
+}
+
+.common-badge {
+  min-width: 48rpx;
+  height: 48rpx;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #fff;
+  margin: 0 12rpx;
+  padding: 0 12rpx;
+}
+
+.common-badge.orange {
+  background-color: #ff9800;
+}
+
+.common-badge.red {
+  background-color: #f44336;
+}
+
+.common-unit {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.impressions-section {
+  background-color: #fff;
+  padding: 30rpx;
+  margin-top: 20rpx;
+}
+
+.impressions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.impression-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx;
+  background-color: #f9f9f9;
+  border-radius: 12rpx;
+  position: relative;
+}
+
+.impression-content {
+  flex: 1;
+}
+
+.impression-text {
+  font-size: 28rpx;
+  color: #333;
+  background-color: #fff;
+  padding: 12rpx 20rpx;
+  border-radius: 20rpx;
+  display: inline-block;
+}
+
+.impression-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: 20rpx;
+}
+
+.impression-author {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.impression-time {
+  font-size: 22rpx;
+  color: #ccc;
+  margin-top: 4rpx;
+}
+
+.delete-btn {
+  position: absolute;
+  right: 16rpx;
+  top: 16rpx;
+  font-size: 24rpx;
+  color: #f44336;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 600rpx;
+  background-color: #fff;
+  border-radius: 20rpx;
+  padding: 40rpx;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  margin-bottom: 20rpx;
+}
+
+.modal-tip {
+  font-size: 26rpx;
+  color: #999;
+  text-align: center;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.impression-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin-bottom: 20rpx;
+}
+
+.impression-options view {
+  padding: 16rpx 24rpx;
+  background-color: #e0e0e0;
+  border-radius: 30rpx;
+  font-size: 28rpx;
+  color: #000000;
+  line-height: 1.5;
+  text-align: center;
+  margin: 10rpx;
+  min-width: 100rpx;
+}
+
+.impression-options .selected {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.custom-input {
+  margin-bottom: 30rpx;
+}
+
+.form-input {
+  width: 100%;
+  height: 88rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #333;
+  background-color: #fff;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 20rpx;
+}
+
+.modal-btn {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+}
+
+.modal-btn.cancel {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.modal-btn.cancel::after {
+  border: none;
+}
+
+.modal-btn.confirm {
+  background-color: #dc2626;
+  color: #fff;
+}
+
+.modal-btn.confirm::after {
+  border: none;
+}

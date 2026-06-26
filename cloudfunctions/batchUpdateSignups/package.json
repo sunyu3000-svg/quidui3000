@@ -1,0 +1,19 @@
+{
+  "name": "batchUpdateSignups",
+  "version": "1.0.0",
+  "description": "批量更新signups记录，添加缺失字段",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "signups",
+    "batch",
+    "update"
+  ],
+  "author": "",
+  "license": "ISC"
+}

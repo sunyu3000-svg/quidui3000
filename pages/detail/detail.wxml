@@ -1,0 +1,167 @@
+<view class="container">
+  <view class="header-image">
+    <view class="header-bg"></view>
+    <view class="header-overlay"></view>
+    <view class="header-content">
+      <text class="header-title">厦门天涯足球俱乐部</text>
+      <text class="header-subtitle">热爱足球 · 享受运动</text>
+    </view>
+  </view>
+
+  <view class="club-card">
+    <view class="club-logo">⚽</view>
+    <view class="club-info">
+      <text class="club-name">厦门天涯足球俱乐部</text>
+      <text class="club-stats">成员 {{signups.length}} | 活动 11 | 动态 0</text>
+    </view>
+  </view>
+
+  <!-- 活动主题 -->
+  <view class="activity-title-card">
+    <text class="activity-title-text">{{activity.title || '活动主题'}}</text>
+    <text class="activity-date">{{activity.date}}</text>
+  </view>
+
+  <view class="info-card">
+    <view class="info-row">
+      <view class="info-icon-wrap">📅</view>
+      <view class="info-content">
+        <text class="info-label">活动时间</text>
+        <text class="info-value">{{activity.time}}</text>
+      </view>
+      <text class="view-count">👁 80</text>
+    </view>
+    
+    <view class="info-row">
+      <view class="info-icon-wrap">📍</view>
+      <view class="info-content" bindtap="handleNavigate">
+        <text class="info-label">活动地点</text>
+        <text class="info-value">{{activity.location}}</text>
+      </view>
+      <view class="nav-buttons">
+        <text class="nav-link" bindtap="handleNavigate">场地导航 ›</text>
+        <text class="edit-link" wx:if="{{isOrganizer}}" bindtap="handleEditLocation">修改 ›</text>
+      </view>
+    </view>
+    
+    <view class="info-row">
+      <view class="info-icon-wrap">⚽</view>
+      <view class="info-content">
+        <text class="info-label">活动类型</text>
+        <text class="info-value">{{activity.activityType || '足球/平台可见'}}</text>
+      </view>
+    </view>
+    
+    <view class="info-row">
+      <view class="info-icon-wrap">💰</view>
+      <view class="info-content">
+        <text class="info-label">收费标准</text>
+        <text class="info-value">{{activity.fee || 'AA制'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="desc-card">
+    <view class="author-info">
+      <view class="author-avatar">👤</view>
+      <view class="author-detail">
+        <text class="author-name">{{activity.organizer || '未知用户'}}</text>
+        <view class="author-stars">★★★★★</view>
+      </view>
+    </view>
+    <text class="desc-text">{{activity.description}}</text>
+  </view>
+
+  <view class="signups-section">
+    <view class="signups-tabs">
+      <view class="tab {{currentTab === 'signups' ? 'active' : ''}}" bindtap="switchTab" data-tab="signups">
+        <text class="tab-text">报名</text>
+        <text class="tab-count">{{signups.length}}/{{activity.maxPlayers || 21}}</text>
+      </view>
+      <view class="tab {{currentTab === 'pendingLeave' ? 'active' : ''}}" bindtap="switchTab" data-tab="pendingLeave">
+        <text class="tab-text">待定</text>
+        <text class="tab-count pending">{{pendingList.length}}</text>
+        <text class="tab-divider">|</text>
+        <text class="tab-text">请假</text>
+        <text class="tab-count leave">{{leaveList.length}}</text>
+      </view>
+    </view>
+
+    <view class="signups-grid">
+      <view class="signup-item" wx:for="{{currentList}}" wx:key="index" bindtap="goToUserProfile" data-user="{{item}}">
+        <view class="avatar-wrapper">
+          <image 
+            wx:if="{{item.avatarUrl}}" 
+            class="signup-avatar" 
+            src="{{item.avatarUrl}}" 
+            mode="aspectFill"
+          />
+          <view wx:else class="signup-avatar default-avatar">
+            <text class="avatar-text">{{item.nickName ? item.nickName.charAt(0) : '?'}}</text>
+          </view>
+          <view class="number-badge" wx:if="{{item.status === 'signups'}}">{{item.matchCount}}</view>
+          <view class="status-badge pending" wx:if="{{item.status === 'pending'}}">待定</view>
+          <view class="status-badge leave" wx:if="{{item.status === 'leave'}}">请假</view>
+        </view>
+        <text class="signup-name">{{item.nickName || '未知'}}</text>
+      </view>
+      
+      <view class="empty-state" wx:if="{{currentList.length === 0}}">
+        <text class="empty-icon">🙋</text>
+        <text class="empty-text">暂无{{currentTab === 'signups' ? '报名' : '待定/请假'}}人员</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-bar">
+    <block wx:if="{{activity.status === 'ended' || activity.status === '已结束'}}">
+      <view class="ended-text">活动已结束</view>
+    </block>
+    <block wx:else>
+      <button 
+        class="action-btn signup-btn {{currentStatus === 'signups' ? 'active' : ''}}" 
+        bindtap="handleSignup"
+      >
+        <text class="btn-icon">✅</text>
+        <text class="btn-text">报名</text>
+      </button>
+      <button 
+        class="action-btn pending-leave-btn {{currentStatus === 'pending' || currentStatus === 'leave' ? 'active' : ''}}" 
+        bindtap="showActionMenu"
+      >
+        <text class="btn-text">待定/请假</text>
+      </button>
+    </block>
+  </view>
+
+  <view class="action-menu" wx:if="{{showMenu}}" bindtap="hideActionMenu">
+    <view class="menu-content" bindtap="stopPropagation">
+      <view class="menu-item" bindtap="handleAction" data-action="pending">
+        <text class="menu-text">{{currentStatus === 'pending' ? '✓ ' : ''}}待定</text>
+      </view>
+      <view class="menu-item" bindtap="handleAction" data-action="leave">
+        <text class="menu-text leave">{{currentStatus === 'leave' ? '✓ ' : ''}}请假</text>
+      </view>
+      <view class="menu-divider" wx:if="{{currentStatus === 'pending' || currentStatus === 'leave'}}"></view>
+      <view class="menu-item cancel" wx:if="{{currentStatus === 'pending' || currentStatus === 'leave'}}" bindtap="handleAction" data-action="cancel">
+        <text class="menu-text">取消</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="success-modal" wx:if="{{showSuccessModal}}" bindtap="hideSuccessModal">
+    <view class="modal-content" bindtap="stopPropagation">
+      <text class="modal-title">{{successTitle}}</text>
+      <view class="modal-divider"></view>
+      <text class="modal-hint">接龙回群，告诉并邀请其余队友</text>
+      <view class="modal-buttons">
+        <view class="modal-btn cancel-btn" bindtap="hideSuccessModal">
+          <text>稍后再说</text>
+        </view>
+        <view class="modal-btn confirm-btn" bindtap="goToGroupChat">
+          <text>接龙回群</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

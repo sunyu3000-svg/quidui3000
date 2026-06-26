@@ -1,0 +1,764 @@
+const db = wx.cloud.database()
+
+Page({
+  data: {
+    userId: '',
+    userInfo: {
+      nickName: '',
+      avatarUrl: '',
+      wechatName: '',
+      registerTime: '',
+      position: '',
+      jerseyNumber: ''
+    },
+    myInfo: {},
+    isLiked: false,
+    myImpression: '',
+    stats: {
+      joinCount: 0,
+      commonCount: 0
+    },
+    likeCount: 0,
+    likedByCount: 0,
+    visitorCount: 0,
+    doveCount: 0,
+    remarkName: '',
+    commonActivities: {
+      thisYear: 0,
+      total: 0
+    },
+    impressions: [],
+    selectedImpressions: [],
+    selectedMap: {},
+    customImpression: '',
+    showImpressionModal: false,
+    impressionOptions: [
+      '高颜值射手',
+      '快枪手',
+      '后防中坚',
+      '边路快手',
+      '中场发动机',
+      '任意球大师',
+      '门神',
+      '跑不死',
+      '助攻王',
+      '带刀后卫',
+      '传球大师',
+      '终结者',
+      '盘带高手',
+      '战术大师',
+      '团队领袖',
+      '防守铁闸',
+      '速度之星',
+      '技术流',
+      '大心脏',
+      '领袖气质',
+      '绿茵艺术家'
+    ]
+  },
+
+  onLoad: function(options) {
+    if (options.userId) {
+      this.setData({ userId: options.userId })
+      
+      if (options.nickName) {
+        const avatarUrl = options.avatarUrl ? decodeURIComponent(options.avatarUrl) : ''
+        this.setData({
+          userInfo: {
+            nickName: decodeURIComponent(options.nickName) || '默认昵称',
+            avatarUrl: avatarUrl,
+            wechatName: decodeURIComponent(options.nickName) || '默认昵称',
+            registerTime: '',
+            position: '',
+            jerseyNumber: ''
+          }
+        })
+      } else {
+        this.setData({
+          userInfo: {
+            nickName: '未知用户',
+            avatarUrl: '',
+            wechatName: '默认昵称',
+            registerTime: '',
+            position: '',
+            jerseyNumber: ''
+          }
+        })
+      }
+      
+      this.loadMyInfo()
+    } else {
+      wx.showToast({
+        title: '用户ID无效',
+        icon: 'none'
+      })
+      setTimeout(() => {
+        wx.navigateBack()
+      }, 1500)
+    }
+  },
+
+  loadMyInfo: function() {
+    const that = this
+    wx.cloud.callFunction({
+      name: 'getOpenId',
+      success: function(res) {
+        const openId = res.result.openid
+        db.collection('users').doc(openId).get({
+          success: function(res) {
+            that.setData({ myInfo: { ...res.data, openId: openId } })
+            that.loadUserInfo()
+          },
+          fail: function(err) {
+            that.setData({ myInfo: { openId: openId, nickName: '用户' } })
+            that.loadUserInfo()
+          }
+        })
+      },
+      fail: function(err) {
+        wx.showToast({
+          title: '获取用户信息失败',
+          icon: 'none'
+        })
+        that.setData({ myInfo: { openId: '', nickName: '用户' } })
+        that.loadUserInfo()
+      }
+    })
+  },
+
+  loadUserInfo: function(callback) {
+    const that = this
+    const { userId, userInfo } = this.data
+
+    db.collection('users').doc(userId).get({
+      success: function(res) {
+        const userData = res.data
+        const newUserId = userData._id || userId
+        that.setData({
+          userId: newUserId,
+          userInfo: {
+            nickName: userData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
+            avatarUrl: (userData.avatarUrl && userData.avatarUrl.trim()) || (userInfo && userInfo.avatarUrl) || '',
+            wechatName: userData.wechatName || (userInfo && userInfo.nickName) || '默认昵称',
+            registerTime: userData.registerTime || '',
+            position: userData.position || '',
+            jerseyNumber: userData.jerseyNumber || ''
+          }
+        })
+        that.loadRemarkName()
+        that.loadAllStats(newUserId)
+        if (callback) callback()
+      },
+      fail: function() {
+        that.loadUserInfoByNickName(userId, callback)
+      }
+    })
+  },
+
+  loadUserInfoByNickName: function(nickName, callback) {
+    const that = this
+    const { userInfo } = this.data
+
+    db.collection('users').where({
+      nickName: nickName
+    }).get({
+      success: function(res) {
+        if (res.data.length > 0) {
+          const userData = res.data[0]
+          const newUserId = userData._id || nickName
+          that.setData({
+            userId: newUserId,
+            userInfo: {
+              nickName: userData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
+              avatarUrl: (userData.avatarUrl && userData.avatarUrl.trim()) || (userInfo && userInfo.avatarUrl) || '',
+              wechatName: userData.wechatName || (userInfo && userInfo.nickName) || '默认昵称',
+              registerTime: userData.registerTime || '',
+              position: userData.position || '',
+              jerseyNumber: userData.jerseyNumber || ''
+            }
+          })
+          that.loadRemarkName()
+          that.loadAllStats(newUserId)
+        } else {
+          if (!userInfo || !userInfo.nickName || userInfo.nickName === '未知用户') {
+            that.setData({
+              userInfo: {
+                nickName: '未知用户',
+                avatarUrl: '',
+                wechatName: '默认昵称',
+                registerTime: '',
+                position: '',
+                jerseyNumber: ''
+              }
+            })
+          }
+          that.loadRemarkName()
+          that.loadAllStats(nickName)
+        }
+        if (callback) callback()
+      },
+      fail: function(err) {
+        that.loadUserInfoFromSignups(nickName, callback)
+      }
+    })
+  },
+
+  loadUserInfoFromSignups: function(nickName, callback) {
+    const that = this
+    const { userInfo } = this.data
+
+    db.collection('signups').where({
+      nickName: nickName
+    }).limit(1).get({
+      success: function(res) {
+        let newUserId = nickName
+        if (res.data.length > 0) {
+          const signupData = res.data[0]
+          newUserId = signupData.userId || signupData._openid || nickName
+          that.setData({
+            userId: newUserId,
+            userInfo: {
+              nickName: signupData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
+              avatarUrl: (signupData.avatarUrl && signupData.avatarUrl.trim()) || (userInfo && userInfo.avatarUrl) || '',
+              wechatName: signupData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
+              registerTime: '',
+              position: '',
+              jerseyNumber: ''
+            }
+          })
+        } else {
+          if (!userInfo || !userInfo.nickName || userInfo.nickName === '未知用户') {
+            that.setData({
+              userInfo: {
+                nickName: '未知用户',
+                avatarUrl: '',
+                wechatName: '默认昵称',
+                registerTime: '',
+                position: '',
+                jerseyNumber: ''
+              }
+            })
+          }
+        }
+        that.loadRemarkName()
+        that.loadAllStats(newUserId)
+        if (callback) callback()
+      },
+      fail: function(err) {
+        if (!userInfo || !userInfo.nickName || userInfo.nickName === '未知用户') {
+          that.setData({
+            userInfo: {
+              nickName: '未知用户',
+              avatarUrl: '',
+              wechatName: '默认昵称',
+              registerTime: '',
+              position: '',
+              jerseyNumber: ''
+            }
+          })
+        }
+        that.loadRemarkName()
+        that.loadAllStats(nickName)
+        if (callback) callback()
+      }
+    })
+  },
+
+  loadRemarkName: function() {
+    const that = this
+    const { myInfo, userId } = this.data
+    if (!myInfo || !myInfo.openId) return
+
+    db.collection('remarks').where({
+      fromOpenId: myInfo.openId,
+      toUserId: userId
+    }).get({
+      success: function(res) {
+        if (res.data.length > 0) {
+          that.setData({ remarkName: res.data[0].remarkName })
+        }
+      }
+    })
+  },
+
+  loadAllStats: function(targetUserId) {
+    const that = this
+    const userId = targetUserId || that.data.userId
+    that.checkLikeStatus(userId)
+    that.loadStats(userId)
+    that.loadDoveCount(userId)
+    that.recordVisit(userId)
+    that.loadImpressions(userId)
+  },
+
+  checkLikeStatus: function(targetUserId) {
+    const that = this
+    const { myInfo, userInfo } = this.data
+    const userId = targetUserId || that.data.userId
+    
+    if (!myInfo || !myInfo.openId) return
+
+    const targetNickName = userInfo ? userInfo.nickName : ''
+
+    db.collection('likes').where({
+      fromOpenId: myInfo.openId
+    }).where(db.command.or([
+      { toUserId: userId },
+      { toNickName: userId },
+      { toNickName: targetNickName }
+    ])).get({
+      success: function(res) {
+        that.setData({ isLiked: res.data.length > 0 })
+      },
+      fail: function() {
+        that.setData({ isLiked: false })
+      }
+    })
+
+    db.collection('likes').where(db.command.or([
+      { toUserId: userId },
+      { toNickName: userId },
+      { toNickName: targetNickName }
+    ])).count({
+      success: function(res) {
+        that.setData({ likeCount: res.total })
+      },
+      fail: function() {
+        that.setData({ likeCount: 0 })
+      }
+    })
+
+    db.collection('likes').where(db.command.or([
+      { toUserId: userId },
+      { toNickName: userId },
+      { toNickName: targetNickName }
+    ])).count({
+      success: function(res) {
+        that.setData({ likedByCount: res.total })
+      },
+      fail: function() {
+        that.setData({ likedByCount: 0 })
+      }
+    })
+  },
+
+  loadStats: function(targetUserId) {
+    const that = this
+    const { myInfo, userInfo } = this.data
+    const userId = targetUserId || that.data.userId
+    if (!myInfo || (!myInfo.openId && !myInfo.userId)) return
+
+    const myUserId = myInfo.userId || myInfo.openId
+
+    const nickName = userInfo ? userInfo.nickName : ''
+    db.collection('signups').where(db.command.or([
+      { userId: userId },
+      { nickName: userId },
+      { nickName: nickName }
+    ])).where({
+      status: 'signups'
+    }).count({
+      success: function(res) {
+        that.setData({
+          'stats.joinCount': res.total
+        })
+      },
+      fail: function(err) {
+        that.setData({
+          'stats.joinCount': 0
+        })
+      }
+    })
+
+    db.collection('signups').where({
+      userId: myUserId,
+      status: 'signups'
+    }).get({
+      success: function(myRes) {
+        const myActivityIds = myRes.data.map(item => item.activityId)
+
+        db.collection('signups').where(db.command.or([
+          { userId: userId },
+          { nickName: userId },
+          { nickName: nickName }
+        ])).where({
+          status: 'signups'
+        }).get({
+          success: function(userRes) {
+            const commonCount = userRes.data.filter(item => 
+              myActivityIds.includes(item.activityId)
+            ).length
+
+            that.setData({
+              'stats.commonCount': commonCount,
+              'commonActivities.thisYear': commonCount,
+              'commonActivities.total': commonCount
+            })
+          },
+          fail: function(err) {
+            that.setData({
+              'stats.commonCount': 0
+            })
+          }
+        })
+      },
+      fail: function() {
+        that.setData({
+          'stats.commonCount': 0
+        })
+      }
+    })
+  },
+
+  loadDoveCount: function(targetUserId) {
+    const that = this
+    const { userInfo } = this.data
+    const userId = targetUserId || that.data.userId
+
+    const nickName = userInfo ? userInfo.nickName : ''
+    db.collection('doves').where(db.command.or([
+      { userId: userId },
+      { nickName: userId },
+      { nickName: nickName }
+    ])).count({
+      success: function(res) {
+        that.setData({ doveCount: res.total })
+      },
+      fail: function() {
+        that.setData({ doveCount: 0 })
+      }
+    })
+  },
+
+  recordVisit: function(targetUserId) {
+    const that = this
+    const { myInfo, userInfo } = this.data
+    const userId = targetUserId || that.data.userId
+    
+    if (!myInfo || !myInfo.openId) return
+
+    const targetNickName = userInfo ? userInfo.nickName : ''
+
+    db.collection('visitors').add({
+      data: {
+        fromOpenId: myInfo.openId,
+        toUserId: userId,
+        toNickName: targetNickName,
+        visitTime: new Date()
+      },
+      success: function() {
+        db.collection('visitors').where(db.command.or([
+          { toUserId: userId },
+          { toNickName: userId },
+          { toNickName: targetNickName }
+        ])).count({
+          success: function(res) {
+            that.setData({ visitorCount: res.total })
+          }
+        })
+      }
+    })
+  },
+
+  toggleLike: function() {
+    const that = this
+    const { userId, myInfo, isLiked, userInfo } = this.data
+    if (!myInfo || !myInfo.openId) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
+
+    const targetNickName = userInfo ? userInfo.nickName : ''
+
+    if (isLiked) {
+      db.collection('likes').where({
+        fromOpenId: myInfo.openId
+      }).where(db.command.or([
+        { toUserId: userId },
+        { toNickName: userId },
+        { toNickName: targetNickName }
+      ])).get({
+        success: function(res) {
+          if (res.data.length > 0) {
+            db.collection('likes').doc(res.data[0]._id).remove({
+              success: function() {
+                that.setData({ isLiked: false })
+                that.checkLikeStatus()
+              }
+            })
+          }
+        }
+      })
+    } else {
+      db.collection('likes').add({
+        data: {
+          fromOpenId: myInfo.openId,
+          fromNickName: myInfo.nickName || '',
+          toUserId: userId,
+          toNickName: targetNickName,
+          createTime: new Date()
+        },
+        success: function() {
+          that.setData({ isLiked: true })
+          that.checkLikeStatus()
+        }
+      })
+    }
+  },
+
+  setRemark: function() {
+    const that = this
+    const { userId, myInfo, remarkName, userInfo } = this.data
+    if (!myInfo || !myInfo.openId) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
+
+    const targetNickName = userInfo ? userInfo.nickName : ''
+
+    wx.showModal({
+      title: '设置备注名',
+      editable: true,
+      placeholderText: '输入备注名',
+      content: remarkName || '',
+      success: function(res) {
+        if (res.confirm && res.content) {
+          db.collection('remarks').where({
+            fromOpenId: myInfo.openId
+          }).where(db.command.or([
+            { toUserId: userId },
+            { toNickName: userId },
+            { toNickName: targetNickName }
+          ])).get({
+            success: function(result) {
+              if (result.data.length > 0) {
+                db.collection('remarks').doc(result.data[0]._id).update({
+                  data: { remarkName: res.content }
+                })
+              } else {
+                db.collection('remarks').add({
+                  data: {
+                    fromOpenId: myInfo.openId,
+                    toUserId: userId,
+                    toNickName: targetNickName,
+                    remarkName: res.content
+                  }
+                })
+              }
+              that.setData({ remarkName: res.content })
+            }
+          })
+        }
+      }
+    })
+  },
+
+  showImpressionModal: function() {
+    this.setData({ showImpressionModal: true })
+  },
+
+  closeImpressionModal: function() {
+    this.setData({ 
+      showImpressionModal: false,
+      selectedImpressions: [],
+      selectedMap: {},
+      customImpression: ''
+    })
+  },
+
+  stopPropagation: function() {
+  },
+
+  selectImpression: function(e) {
+    const content = e.currentTarget.dataset.content
+    const { selectedImpressions, selectedMap } = this.data
+    const newSelectedMap = { ...selectedMap }
+    let newSelectedImpressions
+
+    if (newSelectedMap[content]) {
+      delete newSelectedMap[content]
+      newSelectedImpressions = selectedImpressions.filter(item => item !== content)
+    } else {
+      if (selectedImpressions.length >= 3) {
+        wx.showToast({ title: '最多选择3个', icon: 'none' })
+        return
+      }
+      newSelectedMap[content] = true
+      newSelectedImpressions = [...selectedImpressions, content]
+    }
+
+    this.setData({
+      selectedImpressions: newSelectedImpressions,
+      selectedMap: newSelectedMap
+    })
+  },
+
+  onImpressionInput: function(e) {
+    this.setData({ customImpression: e.detail.value })
+  },
+
+  saveImpression: function() {
+    const that = this
+    const { userId, myInfo, selectedImpressions, customImpression, userInfo } = this.data
+    if (!myInfo || !myInfo.openId) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
+
+    const finalImpression = selectedImpressions.length > 0 
+      ? selectedImpressions.join('、') 
+      : customImpression
+
+    if (!finalImpression || !finalImpression.trim()) {
+      wx.showToast({ title: '请输入印象', icon: 'none' })
+      return
+    }
+
+    const targetNickName = userInfo ? userInfo.nickName : ''
+
+    db.collection('impressions').where({
+      fromOpenId: myInfo.openId
+    }).where(db.command.or([
+      { toUserId: userId },
+      { toNickName: userId },
+      { toNickName: targetNickName }
+    ])).get({
+      success: function(res) {
+        if (res.data.length > 0) {
+          db.collection('impressions').doc(res.data[0]._id).update({
+            data: { 
+              content: finalImpression,
+              updateTime: new Date()
+            },
+            success: function() {
+              that.closeImpressionModal()
+              that.loadImpressions()
+            }
+          })
+        } else {
+          that.saveImpressionData(myInfo, userId, targetNickName, finalImpression)
+        }
+      },
+      fail: function() {
+        that.saveImpressionData(myInfo, userId, targetNickName, finalImpression)
+      }
+    })
+  },
+
+  saveImpressionData: function(myInfo, userId, toNickName, finalImpression) {
+    const that = this
+    db.collection('impressions').add({
+      data: {
+        fromOpenId: myInfo.openId,
+        fromNickName: myInfo.nickName || '',
+        toUserId: userId,
+        toNickName: toNickName || '',
+        content: finalImpression,
+        createTime: new Date(),
+        updateTime: new Date()
+      },
+      success: function() {
+        that.closeImpressionModal()
+        that.loadImpressions()
+      },
+      fail: function() {
+        db.collection('impressions').add({
+          data: {
+            fromOpenId: myInfo.openId,
+            fromNickName: myInfo.nickName || '',
+            toUserId: userId,
+            toNickName: toNickName || '',
+            content: finalImpression,
+            createTime: new Date(),
+            updateTime: new Date()
+          },
+          success: function() {
+            that.closeImpressionModal()
+            that.loadImpressions()
+          },
+          fail: function() {
+            that.initCollectionsAndSave(myInfo, userId, toNickName, finalImpression)
+          }
+        })
+      }
+    })
+  },
+
+  initCollectionsAndSave: function(myInfo, userId, toNickName, finalImpression) {
+    const that = this
+    wx.cloud.callFunction({
+      name: 'initAdmin',
+      success: function() {
+        that.saveImpressionData(myInfo, userId, toNickName, finalImpression)
+      },
+      fail: function() {
+        wx.showToast({ title: '保存失败，请稍后重试', icon: 'none' })
+        that.closeImpressionModal()
+      }
+    })
+  },
+
+  loadImpressions: function(targetUserId) {
+    const that = this
+    const { myInfo, userInfo } = this.data
+    const userId = targetUserId || that.data.userId
+
+    const targetNickName = userInfo ? userInfo.nickName : ''
+
+    db.collection('impressions').where(db.command.or([
+      { toUserId: userId },
+      { toNickName: userId },
+      { toNickName: targetNickName }
+    ])).get({
+      success: function(res) {
+        const impressions = (res.data || []).map(item => ({
+          ...item,
+          formattedTime: item.createTime ? new Date(item.createTime).toLocaleString() : ''
+        })).sort((a, b) => new Date(b.createTime) - new Date(a.createTime))
+
+        that.setData({ impressions: impressions })
+
+        if (myInfo && myInfo.openId) {
+          const myImpressionItem = impressions.find(i => i.fromOpenId === myInfo.openId)
+          if (myImpressionItem && myImpressionItem.content) {
+            const selectedArray = myImpressionItem.content.split('、').filter(item => item.trim())
+            const selectedMap = {}
+            selectedArray.forEach(item => {
+              selectedMap[item] = true
+            })
+            that.setData({ 
+              myImpression: myImpressionItem.content,
+              selectedImpressions: selectedArray,
+              selectedMap: selectedMap,
+              customImpression: ''
+            })
+          } else {
+            that.setData({
+              myImpression: '',
+              selectedImpressions: [],
+              selectedMap: {},
+              customImpression: ''
+            })
+          }
+        }
+      },
+      fail: function() {
+        that.setData({ impressions: [] })
+      }
+    })
+  },
+
+  deleteImpression: function(e) {
+    const that = this
+    const id = e.currentTarget.dataset.id
+
+    db.collection('impressions').doc(id).remove({
+      success: function() {
+        that.loadImpressions()
+      },
+      fail: function() {
+        wx.showToast({ title: '删除失败', icon: 'none' })
+      }
+    })
+  }
+})

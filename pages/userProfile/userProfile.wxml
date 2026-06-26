@@ -1,0 +1,155 @@
+<view class="user-profile-container">
+  <!-- 用户信息卡片 -->
+  <view class="user-header">
+    <view class="user-avatar-section">
+      <image 
+        wx:if="{{userInfo.avatarUrl}}" 
+        class="user-avatar" 
+        src="{{userInfo.avatarUrl}}" 
+        mode="aspectFill"
+      />
+      <view wx:else class="user-avatar default-avatar">
+        <text class="avatar-text">{{userInfo.nickName ? userInfo.nickName.charAt(0) : '?'}}</text>
+      </view>
+      <button class="share-btn" open-type="share">
+        <text class="share-icon">💬</text>
+      </button>
+    </view>
+    
+    <view class="user-names">
+      <text class="nick-name">{{userInfo.nickName}}</text>
+      <view class="name-row">
+        <text class="label">微信昵称：</text>
+        <text class="value">{{userInfo.wechatName}}</text>
+      </view>
+      <view class="name-row" wx:if="{{userInfo.position}}">
+        <text class="label">擅长位置：</text>
+        <text class="value">{{userInfo.position}}</text>
+      </view>
+      <view class="name-row" wx:if="{{userInfo.jerseyNumber}}">
+        <text class="label">球衣号码：</text>
+        <text class="value">{{userInfo.jerseyNumber}}</text>
+      </view>
+      <view class="name-row remark-row" bindtap="setRemark">
+        <text class="label">备注名：</text>
+        <text class="value remark-value">{{remarkName || '设置备注名'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 统计信息 -->
+  <view class="stats-section">
+    <view class="like-numbers">
+      <view class="like-item">
+        <text class="number">{{likeCount}}</text>
+        <text class="label">喜欢</text>
+      </view>
+      <view class="like-item">
+        <text class="number">{{likedByCount}}</text>
+        <text class="label">被喜欢</text>
+      </view>
+      <view class="like-item">
+        <text class="number">{{visitorCount}}</text>
+        <text class="label">访客</text>
+      </view>
+      <view class="like-item">
+        <text class="number">{{doveCount}}</text>
+        <text class="label">放鸽子</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 活动统计 -->
+  <view class="activity-stats">
+    <view class="stat-item">
+      <text class="stat-number">{{stats.joinCount}}</text>
+      <text class="stat-label">参加活动</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-number">{{stats.commonCount}}</text>
+      <text class="stat-label">共同活动</text>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="action-section">
+    <view class="action-btn like-btn {{isLiked ? 'liked' : ''}}" bindtap="toggleLike">
+      <view class="heart-icon">{{isLiked ? '❤️' : '🤍'}}</view>
+      <text class="btn-text">{{isLiked ? '已喜欢' : '喜欢'}}</text>
+    </view>
+    <view class="action-btn impression-btn" bindtap="showImpressionModal">
+      <view class="heart-icon">💬</view>
+      <text class="btn-text">{{myImpression ? '修改印象' : '添加印象'}}</text>
+    </view>
+  </view>
+
+  <!-- 共同活动 -->
+  <view class="common-activities-section" wx:if="{{stats.commonCount > 0}}">
+    <view class="section-title">共同活动</view>
+    <view class="common-list">
+      <view class="common-item">
+        <text class="common-text">今年TA和我共同踢球</text>
+        <view class="common-badge orange">{{commonActivities.thisYear}}</view>
+        <text class="common-unit">次</text>
+      </view>
+      <view class="common-item">
+        <text class="common-text">累计TA和我共同踢球</text>
+        <view class="common-badge red">{{commonActivities.total}}</view>
+        <text class="common-unit">次</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 印象列表 -->
+  <view class="impressions-section" wx:if="{{impressions.length > 0}}">
+    <view class="section-title">大家对TA的印象</view>
+    <view class="impressions-list">
+      <view class="impression-item" wx:for="{{impressions}}" wx:key="id">
+        <view class="impression-content">
+          <text class="impression-text">{{item.content}}</text>
+        </view>
+        <view class="impression-meta">
+          <text class="impression-author">{{item.fromNickName}}</text>
+          <text class="impression-time">{{item.formattedTime}}</text>
+        </view>
+        <view wx:if="{{item.fromNickName === myInfo.nickName}}" class="delete-btn" bindtap="deleteImpression" data-id="{{item.id}}">
+          <text>删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 添加印象弹窗 -->
+  <view class="modal" wx:if="{{showImpressionModal}}" bindtap="closeImpressionModal">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-title">添加印象</view>
+      <text class="modal-tip">选择一个形容或自定义描述</text>
+      
+      <view class="impression-options">
+        <view 
+          class="option-tag {{selectedMap[item] ? 'selected' : ''}}" 
+          wx:for="{{impressionOptions}}" 
+          wx:key="index"
+          bindtap="selectImpression"
+          data-content="{{item}}"
+        >
+          {{item}}
+        </view>
+      </view>
+
+      <view class="custom-input">
+        <input 
+          class="form-input" 
+          placeholder="或输入自定义印象" 
+          value="{{customImpression}}" 
+          bindinput="onImpressionInput"
+        />
+      </view>
+
+      <view class="modal-buttons">
+        <button class="modal-btn cancel" bindtap="closeImpressionModal">取消</button>
+        <button class="modal-btn confirm" bindtap="saveImpression">保存</button>
+      </view>
+    </view>
+  </view>
+</view>

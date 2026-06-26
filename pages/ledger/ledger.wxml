@@ -1,0 +1,192 @@
+<view class="container">
+  <view class="balance-card">
+    <view class="balance-title">💰 当前队费余额</view>
+    <view class="balance-amount">¥{{balance}}</view>
+  </view>
+
+  <view class="action-buttons" wx:if="{{isAdmin}}">
+    <button class="action-btn income" bindtap="showIncomeModal">+ 收入</button>
+    <button class="action-btn expense" bindtap="showExpenseModal">- 支出</button>
+    <button class="action-btn dove" bindtap="showDoveModal">鸽子管理</button>
+  </view>
+
+  <view class="records-card" wx:if="{{isAdmin}}">
+    <view class="card-header">
+      <text class="card-title">📊 收支明细</text>
+      <text class="record-count">{{records.length}}条记录</text>
+    </view>
+    
+    <view class="records-list" wx:if="{{records.length > 0}}">
+      <view class="record-item" wx:for="{{records}}" wx:key="_id">
+        <view class="record-icon {{item.type}}">
+          {{item.type === 'income' ? '+' : '-'}}
+        </view>
+        <view class="record-info">
+          <text class="record-title">{{item.title}}</text>
+          <text class="record-time">{{item.time}}</text>
+        </view>
+        <view class="record-amount {{item.type}}">
+          {{item.type === 'income' ? '+' : '-'}}¥{{item.amount}}
+        </view>
+        <view class="record-actions">
+          <text class="action-btn edit" bindtap="editRecord" data-id="{{item._id}}" data-type="{{item.type}}" data-amount="{{item.amount}}" data-title="{{item.title}}">编辑</text>
+          <text class="action-btn delete" bindtap="deleteRecord" data-id="{{item._id}}">删除</text>
+        </view>
+      </view>
+    </view>
+    
+    <view class="empty-state" wx:else>
+      <text class="empty-icon">📝</text>
+      <text class="empty-text">暂无收支记录</text>
+    </view>
+  </view>
+
+  <!-- 普通用户统计报表 -->
+  <view class="stats-card" wx:if="{{!isAdmin}}">
+    <view class="stats-header">
+      <text class="stats-title">📊 队费统计</text>
+    </view>
+    
+    <view class="stats-content">
+      <view class="stat-row">
+        <text class="stat-label">总缴费金额</text>
+        <text class="stat-value income">¥{{totalIncome}}</text>
+      </view>
+      <view class="stat-row">
+        <text class="stat-label">总支出金额</text>
+        <text class="stat-value expense">¥{{totalExpense}}</text>
+      </view>
+      <view class="stat-row-divider"></view>
+      <view class="stat-row">
+        <text class="stat-label">当前余额</text>
+        <text class="stat-value balance">¥{{balance}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="tips-card">
+    <view class="tips-header">💡 使用说明</view>
+    <view class="tips-content">
+      <view class="tip-item">
+        <text class="tip-number">1</text>
+        <text>队长和副队长可以记账</text>
+      </view>
+      <view class="tip-item">
+        <text class="tip-number">2</text>
+        <text>收入：球队会员缴费、外来球员缴费等</text>
+      </view>
+      <view class="tip-item">
+        <text class="tip-number">3</text>
+        <text>支出：场地费等</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="modal" wx:if="{{showIncomeModal || showExpenseModal || showEditModal}}">
+  <view class="modal-content">
+    <view class="modal-title">{{showIncomeModal ? '记录收入' : showExpenseModal ? '记录支出' : '编辑记录'}}</view>
+    
+    <view wx:if="{{showIncomeModal}}" class="quick-options">
+      <text class="quick-title">快捷收入</text>
+      <view class="quick-buttons">
+        <button class="quick-btn" bindtap="quickIncome" data-amount="600" data-title="会员年费">会员年费 ¥600</button>
+        <button class="quick-btn" bindtap="quickIncome" data-amount="30" data-title="外来球员缴费">外来球员 ¥30</button>
+        <button class="quick-btn" bindtap="quickIncome" data-amount="50" data-title="临时球员缴费">临时球员 ¥50</button>
+      </view>
+    </view>
+    
+    <view class="form-item">
+      <text class="form-label">金额</text>
+      <input class="form-input" type="digit" placeholder="请输入金额" value="{{formAmount}}" bindinput="onAmountInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">说明</text>
+      <input class="form-input" placeholder="请输入说明" value="{{formTitle}}" bindinput="onTitleInput" />
+    </view>
+    <view class="modal-buttons">
+      <button class="modal-btn cancel" bindtap="closeModal">取消</button>
+      <button class="modal-btn confirm" bindtap="{{showEditModal ? 'updateRecord' : 'saveRecord'}}">确认</button>
+    </view>
+  </view>
+</view>
+
+<!-- 放鸽子管理弹窗 -->
+<view class="modal" wx:if="{{showDoveModal}}">
+  <view class="modal-content">
+    <view class="modal-title">🕊️ 放鸽子管理</view>
+    
+    <!-- 日期筛选 -->
+    <view class="form-item">
+      <view class="filter-row">
+        <text class="form-label">选择月份</text>
+        <picker mode="date" fields="month" value="{{filterDate}}" bindchange="onDateChange">
+          <view class="picker-btn">
+            <text>{{displayDate || '选择年月'}}</text>
+          </view>
+        </picker>
+      </view>
+    </view>
+    
+    <!-- 选择活动 -->
+    <view class="form-item">
+      <text class="form-label">选择活动</text>
+      <view class="activity-list">
+        <view 
+          wx:for="{{activities}}" 
+          wx:key="_id" 
+          class="activity-item {{selectedActivity === item._id ? 'selected' : ''}}"
+          bindtap="selectActivity"
+          data-id="{{item._id}}"
+        >
+          <view class="activity-info">
+            <text class="activity-title">{{item.title}}</text>
+            <text class="activity-date">· {{item.date}}{{item.time ? ' ' + item.time : ''}}</text>
+          </view>
+          <text class="activity-status" wx:if="{{item.doveConfirmed}}">已确认</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 报名用户列表 -->
+    <view class="form-item" wx:if="{{activitySignups.length > 0}}">
+      <text class="form-label">报名用户（{{totalSignups || activitySignups.length}}人）（点击选择/取消放鸽子）</text>
+      <view class="signups-grid">
+        <view 
+          wx:for="{{activitySignups}}" 
+          wx:key="_id" 
+          class="signup-item {{item.isDove ? 'selected' : ''}}"
+          bindtap="toggleDove"
+          data-userid="{{item.userId || item._id}}"
+          data-nickname="{{item.nickName}}"
+          data-isDove="{{item.isDove}}"
+        >
+          <view class="avatar-wrapper">
+            <image 
+              wx:if="{{item.avatarUrl}}" 
+              class="signup-avatar" 
+              src="{{item.avatarUrl}}" 
+              mode="aspectFill"
+            />
+            <view wx:else class="signup-avatar default-avatar">
+              <text class="avatar-text">{{item.nickName ? item.nickName.charAt(0) : '?'}}</text>
+            </view>
+            <view class="checkbox-overlay" wx:if="{{item.isDove}}">✓</view>
+          </view>
+          <text class="signup-name">{{item.nickName}}</text>
+          <view class="dove-badge" wx:if="{{item.isDove}}">鸽子</view>
+        </view>
+      </view>
+    </view>
+    
+    <view class="empty-state" wx:else>
+      <text class="empty-icon">👥</text>
+      <text class="empty-text">{{selectedActivity ? '该活动无人报名' : '请先选择活动'}}</text>
+    </view>
+    
+    <view class="modal-buttons">
+      <button class="modal-btn cancel" bindtap="closeDoveModal">取消</button>
+      <button class="modal-btn confirm" bindtap="confirmDoves">确认提交</button>
+    </view>
+  </view>
+</view>

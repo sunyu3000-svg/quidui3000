@@ -1,50 +1,270 @@
 <view class="container">
-  <view class="logo-section">
-    <view class="logo">⚽</view>
-    <view class="title">厦门天涯足球队</view>
-    <view class="subtitle">团结拼搏，共创辉煌</view>
-  </view>
-  
-  <view class="quick-actions">
-    <view class="action-card" bindtap="goToMatches">
-      <view class="action-icon">🏆</view>
-      <view class="action-title">比赛日程</view>
-      <view class="action-desc">查看近期比赛</view>
-    </view>
-    <view class="action-card" bindtap="goToRegister">
-      <view class="action-icon">📝</view>
-      <view class="action-title">报名参赛</view>
-      <view class="action-desc">报名下场比赛</view>
-    </view>
-  </view>
-  
-  <view class="next-match" wx:if="{{nextMatch}}">
-    <view class="section-title">📅 下一场比赛</view>
-    <view class="match-preview">
-      <view class="match-teams">
-        <view class="team">{{nextMatch.homeTeam}}</view>
-        <view class="vs">VS</view>
-        <view class="team">{{nextMatch.awayTeam}}</view>
-      </view>
-      <view class="match-info">
-        <text class="match-date">{{nextMatch.date}} {{nextMatch.time}}</text>
-        <text class="match-location">📍 {{nextMatch.locationName}}</text>
+  <view class="cover-section">
+    <image class="cover-image" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=dynamic%20soccer%20team%20playing%20on%20green%20field%20at%20sunset%2C%20professional%20sports%20photography%2C%20energetic%2C%20warm%20orange%20and%20blue%20sky&image_size=landscape_16_9" mode="aspectFill" />
+    <view class="cover-overlay">
+      <view class="header">
+        <view class="logo">⚽</view>
+        <view class="title">天涯球队管家</view>
+        <view class="subtitle">一起踢球，快乐足球</view>
       </view>
     </view>
   </view>
-  
+
+  <!-- 统计卡片 -->
   <view class="stats-section">
-    <view class="stat-item">
-      <view class="stat-value">{{stats.playerCount}}</view>
-      <view class="stat-label">在册球员</view>
+    <view class="stats-grid">
+      <view class="stat-card">
+        <view class="stat-icon-wrapper blue">
+          <text class="stat-icon">📊</text>
+        </view>
+        <view class="stat-content">
+          <text class="stat-value">{{stats.totalActivities}}</text>
+          <text class="stat-label">总活动数</text>
+        </view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-icon-wrapper green">
+          <text class="stat-icon">⚡</text>
+        </view>
+        <view class="stat-content">
+          <text class="stat-value">{{stats.ongoingActivities}}</text>
+          <text class="stat-label">进行中</text>
+        </view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-icon-wrapper purple">
+          <text class="stat-icon">⭐</text>
+        </view>
+        <view class="stat-content">
+          <text class="stat-value">{{stats.activeUsers}}</text>
+          <text class="stat-label">活跃用户</text>
+        </view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-icon-wrapper gold">
+          <text class="stat-icon">💰</text>
+        </view>
+        <view class="stat-content">
+          <text class="stat-value">{{stats.totalFees}}</text>
+          <text class="stat-label">累计费用(元)</text>
+        </view>
+      </view>
     </view>
-    <view class="stat-item">
-      <view class="stat-value">{{stats.matchCount}}</view>
-      <view class="stat-label">比赛场次</view>
+  </view>
+
+  <!-- 周活跃度图表 -->
+  <view class="chart-section">
+    <view class="section-header">
+      <text class="section-title">📈 本周活跃度</text>
+      <text class="section-subtitle">报名人数趋势</text>
     </view>
-    <view class="stat-item">
-      <view class="stat-value">{{stats.registeredCount}}</view>
-      <view class="stat-label">已报名</view>
+    <view class="chart-container">
+      <view class="chart-bars">
+        <view class="bar-item" wx:for="{{chartData.labels}}" wx:key="index">
+          <view class="bar-wrapper">
+            <view 
+              class="bar" 
+              style="height: {{chartData.data[index] * 5}}px; background: linear-gradient(180deg, #dc2626 0%, #ef4444 100%);"
+            ></view>
+            <text class="bar-value">{{chartData.data[index]}}</text>
+          </view>
+          <text class="bar-label">{{item}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="chart-summary">
+      <view class="summary-item">
+        <text class="summary-icon">⚽</text>
+        <text class="summary-label">本周活动</text>
+        <text class="summary-value">{{stats.weeklyActivity}}场</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-icon">👤</text>
+        <text class="summary-label">平均报名</text>
+        <text class="summary-value">{{stats.avgSignups}}人/场</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 月度活动趋势 -->
+  <view class="chart-section">
+    <view class="section-header">
+      <text class="section-title">📊 月度活动趋势</text>
+      <text class="section-subtitle">近12个月活动数量</text>
+    </view>
+    <scroll-view class="chart-scroll" scroll-x enable-flex>
+      <view class="chart-container-horizontal">
+        <view class="chart-bars-horizontal">
+          <view class="bar-item" wx:for="{{monthlyData.labels}}" wx:key="index">
+            <view class="bar-wrapper">
+              <view 
+                class="bar monthly-bar" 
+                style="height: {{monthlyData.data[index] * 8}}px; background: linear-gradient(180deg, #2563eb 0%, #3b82f6 100%);"
+              ></view>
+              <text class="bar-value">{{monthlyData.data[index]}}</text>
+            </view>
+            <text class="bar-label">{{item}}</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 活动类型分布 -->
+  <view class="chart-section">
+    <view class="section-header">
+      <text class="section-title">🎯 活动类型分布</text>
+    </view>
+    <view class="pie-chart-container">
+      <view class="pie-chart">
+        <view 
+          class="pie-slice" 
+          wx:for="{{activityTypeData}}" 
+          wx:key="index"
+          style="background-color: {{item.color}};"
+        ></view>
+      </view>
+      <view class="pie-legend">
+        <view 
+          class="legend-item" 
+          wx:for="{{activityTypeData}}" 
+          wx:key="index"
+        >
+          <view class="legend-dot" style="background-color: {{item.color}};"></view>
+          <text class="legend-text">{{item.name}}</text>
+          <text class="legend-value">{{item.value}}%</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 热门球员排行榜 -->
+  <view class="chart-section">
+    <view class="section-header">
+      <text class="section-title">🏆 热门球员榜</text>
+      <text class="section-subtitle">参赛次数最多的球员</text>
+    </view>
+    <view class="ranking-list">
+      <view 
+        class="ranking-item" 
+        wx:for="{{topPlayers}}" 
+        wx:key="index"
+        bindtap="goToUserProfile"
+        data-user-id="{{item.userId || item._id}}"
+        data-nick-name="{{item.nickName}}"
+        data-avatar-url="{{item.avatarUrl}}"
+      >
+        <view class="rank-badge" style="background-color: {{index < 3 ? ['#fbbf24', '#9ca3af', '#f59e0b'][index] : '#e5e7eb'}};">
+          <text class="rank-num">{{index + 1}}</text>
+        </view>
+        <view class="player-info">
+          <view class="player-avatar">
+            <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" />
+            <text wx:else class="avatar-text">{{item.nickName ? item.nickName.charAt(0) : '?'}}</text>
+          </view>
+          <view class="player-detail">
+            <text class="player-name">{{item.nickName || '未知'}}</text>
+            <view class="player-progress">
+              <view class="progress-bar">
+                <view class="progress-fill" style="width: {{item.count / 100 * 100}}%"></view>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view class="player-count">
+          <text class="count-num">{{item.count}}</text>
+          <text class="count-label">场</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 鸽子榜 -->
+  <view class="dove-section">
+    <view class="dove-header">
+      <view class="dove-title-row">
+        <text class="dove-icon-large">🕊️</text>
+        <view class="dove-title-wrap">
+          <text class="dove-title">鸽子榜</text>
+          <text class="dove-subtitle">放鸽子次数排名</text>
+        </view>
+      </view>
+    </view>
+    
+    <view class="dove-podium" wx:if="{{doveRankings.length >= 3}}">
+      <!-- 第二名 -->
+      <view class="podium-item second" bindtap="goToUserProfile" data-user-id="{{doveRankings[1].userId}}" data-nick-name="{{doveRankings[1].nickName}}" data-avatar-url="{{doveRankings[1].avatarUrl}}">
+        <view class="podium-avatar-wrap">
+          <view class="podium-avatar silver">
+            <image wx:if="{{doveRankings[1].avatarUrl}}" src="{{doveRankings[1].avatarUrl}}" mode="aspectFill" />
+            <text wx:else class="avatar-initial">{{doveRankings[1].nickName ? doveRankings[1].nickName.charAt(0) : '?'}}</text>
+          </view>
+          <view class="dove-badge silver">🕊️</view>
+        </view>
+        <text class="podium-name">{{doveRankings[1].nickName || '未知用户'}}</text>
+        <view class="podium-count">{{doveRankings[1].count}}次</view>
+        <view class="podium-stand" style="height: 120rpx;">2</view>
+      </view>
+      
+      <!-- 第一名 -->
+      <view class="podium-item first" bindtap="goToUserProfile" data-user-id="{{doveRankings[0].userId}}" data-nick-name="{{doveRankings[0].nickName}}" data-avatar-url="{{doveRankings[0].avatarUrl}}">
+        <view class="podium-avatar-wrap">
+          <view class="podium-avatar gold">
+            <image wx:if="{{doveRankings[0].avatarUrl}}" src="{{doveRankings[0].avatarUrl}}" mode="aspectFill" />
+            <text wx:else class="avatar-initial">{{doveRankings[0].nickName ? doveRankings[0].nickName.charAt(0) : '?'}}</text>
+          </view>
+          <view class="dove-badge gold">🕊️</view>
+          <view class="dove-crown">👑</view>
+        </view>
+        <text class="podium-name">{{doveRankings[0].nickName || '未知用户'}}</text>
+        <view class="podium-count highlight">{{doveRankings[0].count}}次</view>
+        <view class="podium-stand champion" style="height: 180rpx;">1</view>
+      </view>
+      
+      <!-- 第三名 -->
+      <view class="podium-item third" bindtap="goToUserProfile" data-user-id="{{doveRankings[2].userId}}" data-nick-name="{{doveRankings[2].nickName}}" data-avatar-url="{{doveRankings[2].avatarUrl}}">
+        <view class="podium-avatar-wrap">
+          <view class="podium-avatar bronze">
+            <image wx:if="{{doveRankings[2].avatarUrl}}" src="{{doveRankings[2].avatarUrl}}" mode="aspectFill" />
+            <text wx:else class="avatar-initial">{{doveRankings[2].nickName ? doveRankings[2].nickName.charAt(0) : '?'}}</text>
+          </view>
+          <view class="dove-badge bronze">🕊️</view>
+        </view>
+        <text class="podium-name">{{doveRankings[2].nickName || '未知用户'}}</text>
+        <view class="podium-count">{{doveRankings[2].count}}次</view>
+        <view class="podium-stand" style="height: 80rpx;">3</view>
+      </view>
+    </view>
+    
+    <!-- 第4名及以后 -->
+    <view class="dove-list" wx:if="{{doveRankings.length > 3}}">
+      <view 
+        class="dove-row" 
+        wx:for="{{doveRankings.slice(3)}}" 
+        wx:key="userId"
+        wx:for-index="idx"
+        bindtap="goToUserProfile"
+        data-user-id="{{item.userId}}"
+        data-nick-name="{{item.nickName}}"
+        data-avatar-url="{{item.avatarUrl}}"
+      >
+        <view class="dove-rank">{{idx + 4}}</view>
+        <view class="dove-avatar">
+          <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" />
+          <text wx:else class="avatar-initial">{{item.nickName ? item.nickName.charAt(0) : '?'}}</text>
+        </view>
+        <text class="dove-name">{{item.nickName || '未知用户'}}</text>
+        <view class="dove-score">
+          <text class="dove-emoji">🕊️</text>
+          <text class="dove-num">{{item.count}}</text>
+        </view>
+      </view>
+    </view>
+    
+    <view class="dove-empty" wx:else>
+      <text class="dove-empty-icon">🎉</text>
+      <text class="dove-empty-text">暂无放鸽子记录</text>
+      <text class="dove-empty-hint">大家都很准时！</text>
     </view>
   </view>
 </view>

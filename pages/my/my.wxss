@@ -1,0 +1,467 @@
+.container {
+  padding: 30rpx;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.user-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60rpx 40rpx;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-radius: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.auth-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx;
+  cursor: pointer;
+}
+
+.auth-area:active {
+  opacity: 0.8;
+}
+
+.avatar-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx;
+}
+
+.avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.avatar-btn::after {
+  border: none;
+}
+
+.nickname-area {
+  display: flex;
+  align-items: center;
+  margin-top: 15rpx;
+  padding: 0 20rpx;
+}
+
+.nickname-text {
+  font-size: 34rpx;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.nickname-placeholder-wrap {
+  padding: 10rpx 30rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 30rpx;
+}
+
+.nickname-placeholder-text {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.edit-icon {
+  font-size: 24rpx;
+  margin-left: 10rpx;
+  opacity: 0.6;
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 600rpx;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 40rpx;
+}
+
+.modal-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  text-align: center;
+  color: #333333;
+  margin-bottom: 30rpx;
+}
+
+.modal-input {
+  width: 100%;
+  height: 80rpx;
+  font-size: 32rpx;
+  text-align: center;
+  border: 2rpx solid #e5e7eb;
+  border-radius: 10rpx;
+  margin-bottom: 30rpx;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 20rpx;
+}
+
+.modal-btn {
+  flex: 1;
+  height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 32rpx;
+}
+
+.modal-btn.cancel-btn {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.modal-btn.confirm-btn {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.modal-btn::after {
+  border: none;
+}
+
+.avatar-circle {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+  overflow: hidden;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.avatar-icon {
+  font-size: 64rpx;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.user-name {
+  font-size: 32rpx;
+  color: #ffffff;
+  font-weight: 500;
+  text-align: center;
+}
+
+.nickname {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.admin-tag {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 0, 0.9);
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  margin-top: 16rpx;
+}
+
+.admin-icon {
+  font-size: 28rpx;
+  margin-right: 8rpx;
+}
+
+.form-section {
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  margin-bottom: 30rpx;
+}
+
+.form-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 30rpx;
+}
+
+.login-hint-container {
+  padding: 40rpx;
+  text-align: center;
+}
+
+.login-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30rpx;
+  background-color: #fff7e6;
+  border-radius: 16rpx;
+  border: 2rpx solid #ffc53d;
+}
+
+.hint-icon {
+  font-size: 48rpx;
+  margin-bottom: 16rpx;
+}
+
+.hint-text {
+  font-size: 28rpx;
+  color: #d46b08;
+  text-align: center;
+}
+
+.form-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.form-label {
+  font-size: 28rpx;
+  color: #666666;
+}
+
+.form-input {
+  font-size: 28rpx;
+  color: #333333;
+  text-align: right;
+}
+
+.picker-content {
+  font-size: 28rpx;
+}
+
+.placeholder {
+  color: #cccccc;
+}
+
+.save-btn {
+  width: 100%;
+  height: 88rpx;
+  background-color: #dc2626;
+  color: #ffffff;
+  border-radius: 44rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-top: 30rpx;
+}
+
+.admin-section {
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 40rpx;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30rpx;
+}
+
+.admin-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.add-admin-btn {
+  height: 64rpx;
+  padding: 0 30rpx;
+  background-color: #dc2626;
+  color: #ffffff;
+  border-radius: 32rpx;
+  font-size: 26rpx;
+}
+
+.add-admin-btn::after {
+  border: none;
+}
+
+.admin-list {
+  margin-bottom: 20rpx;
+}
+
+.admin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.admin-actions {
+  display: flex;
+  align-items: center;
+}
+
+.cannot-delete {
+  font-size: 24rpx;
+  color: #cccccc;
+}
+
+.admin-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-name {
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.admin-role {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.delete-admin-btn {
+  height: 56rpx;
+  padding: 0 24rpx;
+  background-color: #f5f5f5;
+  color: #999999;
+  border-radius: 28rpx;
+  font-size: 24rpx;
+}
+
+.delete-admin-btn::after {
+  border: none;
+}
+
+.admin-empty {
+  padding: 40rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: #999999;
+}
+
+.admin-tips {
+  background-color: #fffbeb;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-top: 20rpx;
+}
+
+.admin-tips .tips-title {
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #92400e;
+  margin-bottom: 16rpx;
+}
+
+.admin-tips .tips-title .icon {
+  margin-right: 8rpx;
+}
+
+.admin-tips .tips-list {
+  padding-left: 16rpx;
+}
+
+.admin-tips .tips-item {
+  display: flex;
+  align-items: center;
+  font-size: 26rpx;
+  color: #78350f;
+  margin-bottom: 8rpx;
+}
+
+.admin-tips .tips-item:last-child {
+  margin-bottom: 0;
+}
+
+.admin-tips .tips-item .number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36rpx;
+  height: 36rpx;
+  background-color: #f97316;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 20rpx;
+  font-weight: bold;
+  margin-right: 12rpx;
+}
+
+.user-select-modal {
+  width: 600rpx;
+  max-height: 700rpx;
+}
+
+.user-list {
+  max-height: 500rpx;
+  overflow-y: auto;
+  margin-bottom: 20rpx;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 16rpx;
+  border-radius: 12rpx;
+}
+
+.user-item:active {
+  background-color: #f3f4f6;
+}
+
+.user-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  margin-right: 20rpx;
+}
+
+.user-avatar-placeholder {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+
+.user-avatar-placeholder text {
+  font-size: 28rpx;
+  color: #6b7280;
+}
+
+.user-item .user-name {
+  font-size: 30rpx;
+  color: #333333;
+  text-align: left;
+}

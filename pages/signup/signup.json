@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "活动报名",
+  "navigationBarBackgroundColor": "#dc3545",
+  "navigationBarTextStyle": "white",
+  "usingComponents": {
+    "calendar": "../../components/calendar/calendar"
+  }
+}
