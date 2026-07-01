@@ -1,88 +1,5 @@
 const db = wx.cloud.database()
 
-// 首页数据统计函数
-// 功能：统计总活动数、本周活动数、平均报名人数、活跃用户
-// 参数：activityList - 活动数组，来自报名页面
-function calculateHomeStats(activityList) {
-  // ========== 1. 总活动数 ==========
-  // 直接返回活动数组的长度
-  const totalActivities = activityList.length
-  
-  // ========== 2. 获取本周的日期范围（周一到周日）==========
-  const now = new Date()
-  const currentYear = now.getFullYear()
-  const currentMonth = now.getMonth()
-  const currentDate = now.getDate()
-  const dayOfWeek = now.getDay() // 0=周日, 1=周一, ... 6=周六
-  
-  // 计算本周一的日期
-  // 如果是周日（dayOfWeek=0），需要往前推6天
-  // 其他天数，往前推 dayOfWeek-1 天
-  const monday = new Date(now)
-  monday.setDate(currentDate - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
-  monday.setHours(0, 0, 0, 0)
-  
-  // 计算本周日的日期（本周一 + 6天）
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  sunday.setHours(23, 59, 59, 999)
-  
-  // 本周范围计算完成
-  // monday: 本周一 00:00:00
-  // sunday: 本周日 23:59:59
-  
-  // ========== 3. 筛选本周活动 ==========
-  // 遍历活动数组，筛选出日期在本周范围内的活动
-  const weeklyActivities = activityList.filter(activity => {
-    // 处理日期格式：支持 '2026-06-05' 或 '2026-6-5' 格式
-    const dateParts = activity.date.split('-')
-    const activityYear = parseInt(dateParts[0])
-    const activityMonth = parseInt(dateParts[1]) - 1 // 月份从0开始
-    const activityDay = parseInt(dateParts[2])
-    
-    const activityDate = new Date(activityYear, activityMonth, activityDay)
-    activityDate.setHours(0, 0, 0, 0)
-    
-    // 返回日期在本周范围内的活动
-    return activityDate >= monday && activityDate <= sunday
-  })
-  
-  // console.log('本周活动:', weeklyActivities.map(a => `${a.title}(${a.date})`).join(', '))
-  // console.log('本周活动数:', weeklyActivities.length)
-  
-  // ========== 4. 计算本周平均报名人数 ==========
-  // 逻辑：先筛选本周活动，然后累加报名人数，最后除以活动数量
-  let averageParticipants = 0
-  
-  if (weeklyActivities.length > 0) {
-    // 累加本周所有活动的报名人数
-    let totalSignups = 0
-    weeklyActivities.forEach(activity => {
-      // 使用 currentParticipants 字段，如果不存在则使用 signups 数组长度
-      const participants = activity.currentParticipants || 
-                         (activity.signups && activity.signups.length) || 0
-      totalSignups += participants
-      // console.log(`活动 "${activity.title}" 报名人数: ${participants}`)
-    })
-    
-    // 计算平均值，保留2位小数
-    averageParticipants = Number((totalSignups / weeklyActivities.length).toFixed(2))
-    // console.log('本周总报名人数:', totalSignups)
-    // console.log('平均报名人数:', averageParticipants)
-  } else {
-    // 如果本周没有活动，返回0
-    // console.log('本周无活动，平均报名人数: 0')
-  }
-  
-  // ========== 5. 返回统计结果 ==========
-  return {
-    totalActivities: totalActivities,           // 总活动数
-    weeklyActivities: weeklyActivities.length, // 本周活动数
-    averageParticipants: averageParticipants,   // 平均报名人数（保留2位小数）
-    activeUsers: 1                              // 活跃用户（暂时固定返回1）
-  }
-}
-
 Page({
   data: {
     isAdmin: true,  // 默认超级管理员
@@ -259,19 +176,12 @@ Page({
   loadActivityStats: function() {
     const that = this
     const now = new Date()
-    const year = now.getFullYear()
-    const month = now.getMonth() + 1
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01`
     
-    // 查询条件与报名页面一致：日期 >= 本月初 或者 日期为空/不存在
-    db.collection('activities').where(db.command.or([
-      { date: db.command.gte(startDate) },
-      { date: '' },
-      { date: db.command.exists(false) }
-    ])).limit(200).get({
+    // 查询所有活动，不做日期限制，确保历史活动也能被统计
+    db.collection('activities').limit(200).get({
       timeout: 15000,
       success: function(res) {
-        const monthlyActivities = res.data || []
+        const allActivities = res.data || []
         const dayOfWeek = now.getDay()
         
         // 计算本周日期范围（周一到周日）
@@ -307,7 +217,7 @@ Page({
         saturday.setDate(now.getDate() + daysUntilSaturday)
         const defaultDate = formatDateLocal(saturday)
         
-        const weeklyActivities = monthlyActivities.filter(item => {
+        const weeklyActivities = allActivities.filter(item => {
           // 无日期活动不计入本周统计
           if (!item.date) return false
           const activityDate = normalizeDate(item.date)
@@ -322,7 +232,7 @@ Page({
         })
         
         // 统计进行中的活动
-        const ongoingActivities = monthlyActivities.filter(a => {
+        const ongoingActivities = allActivities.filter(a => {
           if (a.status !== 'active') return false
           if (a.date && a.date < today) return false
           return true
@@ -332,7 +242,7 @@ Page({
         that.loadWeeklySignupCount(weeklyActivities)
         
         // 并行加载其他数据，提升首页加载速度
-        that.loadCurrentActivity(monthlyActivities)
+        that.loadCurrentActivity(allActivities)
         that.loadWeeklyTrendData()
         that.loadMonthlyData()
         that.loadActivityTypeData()
@@ -994,17 +904,8 @@ loadMonthlyData: function() {
     // console.log('本周一:', formatDateLocal(monday))
     // console.log('本周日期:', weekDays.map((d, i) => `${i}:${d}`).join(', '))
     
-    // 查询条件与报名页面一致：日期 >= 本月初 或者 日期为空/不存在
-    const year = now.getFullYear()
-    const month = now.getMonth() + 1
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-    
-    // 先查询活动列表，筛选出本周活动
-    db.collection('activities').where(db.command.or([
-      { date: db.command.gte(startDate) },
-      { date: '' },
-      { date: db.command.exists(false) }
-    ])).limit(500).get({
+    // 查询所有活动，不做日期限制，确保历史活动也能被统计到本周趋势
+    db.collection('activities').limit(500).get({
       success: function(activityRes) {
         const activities = activityRes.data || []
         
