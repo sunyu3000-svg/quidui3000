@@ -178,7 +178,7 @@ Page({
     const now = new Date()
     
     // 查询所有活动，不做日期限制，确保历史活动也能被统计
-    db.collection('activities').limit(200).get({
+    db.collection('activities').limit(500).get({
       timeout: 15000,
       success: function(res) {
         const allActivities = res.data || []
@@ -212,36 +212,34 @@ Page({
           return null
         }
         
-        const daysUntilSaturday = dayOfWeek === 0 ? 6 : 6 - dayOfWeek
-        const saturday = new Date(now)
-        saturday.setDate(now.getDate() + daysUntilSaturday)
-        const defaultDate = formatDateLocal(saturday)
+        // 统计总活动数
+        that.setData({ 'stats.totalActivities': allActivities.length })
         
         const weeklyActivities = allActivities.filter(item => {
-          // 无日期活动不计入本周统计
           if (!item.date) return false
           const activityDate = normalizeDate(item.date)
           if (!activityDate) return false
-          const isInWeek = activityDate >= weekStart && activityDate <= weekEnd
-          return isInWeek
+          return activityDate >= weekStart && activityDate <= weekEnd
         })
         
-        // 更新统计数据
+        // 更新本周活动统计
         that.setData({ 
           'stats.weeklyActivity': weeklyActivities.length
         })
         
-        // 统计进行中的活动
+        // 统计进行中的活动（status=active 且日期未过）
         const ongoingActivities = allActivities.filter(a => {
           if (a.status !== 'active') return false
-          if (a.date && a.date < today) return false
-          return true
+          if (!a.date) return true  // 无日期视为进行中
+          const nd = normalizeDate(a.date)
+          if (!nd) return true
+          return nd >= today
         }).length
         that.setData({ 'stats.ongoingActivities': ongoingActivities })
         
         that.loadWeeklySignupCount(weeklyActivities)
         
-        // 并行加载其他数据，提升首页加载速度
+        // 并行加载其他数据
         that.loadCurrentActivity(allActivities)
         that.loadWeeklyTrendData()
         that.loadMonthlyData()
@@ -249,22 +247,14 @@ Page({
         that.loadTopPlayersFromDatabase()
         that.loadTotalFees()
         that.loadDoveRankings()
-        // 数据加载完成后触发统计数字滚动动画
+        
+        // 触发统计数字滚动动画
         setTimeout(() => {
           that.animateStatsCards()
         }, 400)
       },
       fail: function() {
         // 查询失败，使用默认值
-      }
-    })
-    
-    // 单独查询总活动数（所有历史活动）
-    db.collection('activities').limit(200).get({
-      timeout: 15000,
-      success: function(res) {
-        const allActivities = res.data || []
-        that.setData({ 'stats.totalActivities': allActivities.length })
       }
     })
   },
@@ -384,7 +374,7 @@ Page({
 loadActivityTypeData: function() {
   const that = this
   
-  db.collection('activities').limit(200).get({
+  db.collection('activities').limit(500).get({
     timeout: 15000,
     success: function(res) {
       const activities = res.data || []
@@ -646,36 +636,36 @@ fetchPlayerAvatars: function(players) {
 loadMonthlyData: function() {
   const that = this
   
-  db.collection('activities').limit(200).get({
+  db.collection('activities').limit(500).get({
     timeout: 15000,
     success: function(res) {
       const activities = res.data || []
       
       const monthLabels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
       const monthlyData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-      let noDateCount = 0
       
-      activities.forEach(activity => {
-        if (activity.date) {
-          const dateParts = activity.date.split('-')
-          if (dateParts.length >= 3) {
-            const month = parseInt(dateParts[1]) - 1
-            if (month >= 0 && month < 12) {
-              monthlyData[month]++
+      // 日期标准化函数
+      const normalizeDate = function(dateStr) {
+        if (!dateStr) return null
+        if (typeof dateStr === 'string') {
+          const parts = dateStr.split('-')
+          if (parts.length >= 3) {
+            return {
+              year: parseInt(parts[0]),
+              month: parseInt(parts[1]),
+              day: parseInt(parts[2])
             }
           }
-        } else {
-          // 无日期活动不计入月度统计，避免数据偏差
-          noDateCount++
+        }
+        return null
+      }
+      
+      activities.forEach(activity => {
+        const parsed = normalizeDate(activity.date)
+        if (parsed && parsed.month >= 1 && parsed.month <= 12) {
+          monthlyData[parsed.month - 1]++
         }
       })
-      
-      // 无日期活动不强制归入当前月，保持月度统计准确
-      // const now = new Date()
-      // const currentMonth = now.getMonth()
-      // monthlyData[currentMonth] += noDateCount
-      
-      const total = monthlyData.reduce((sum, count) => sum + count, 0)
       
       that.setData({
         'monthlyData.labels': monthLabels,
@@ -909,25 +899,27 @@ loadMonthlyData: function() {
       success: function(activityRes) {
         const activities = activityRes.data || []
         
-        // 计算本周六日期（与报名页面一致）
-        const saturday = new Date(now)
-        const daysUntilSaturday = dayOfWeek === 0 ? 6 : 6 - dayOfWeek
-        saturday.setDate(now.getDate() + daysUntilSaturday)
-        const defaultDate = formatDateLocal(saturday)
-        
-        // 筛选本周活动（日期在本周范围内，日期为空的活动使用本周六日期）
-        const weeklyActivities = activities.filter(activity => {
-          const activityDate = activity.date || defaultDate
-          return weekDays.includes(activityDate)
-        })
+        // 日期标准化函数（确保 YYYY-MM-DD 格式一致，处理无前导零的情况）
+        const normalizeDate = function(dateStr) {
+          if (!dateStr) return null
+          if (typeof dateStr === 'string') {
+            const parts = dateStr.split('-')
+            if (parts.length === 3) {
+              return `${parts[0]}-${String(parseInt(parts[1])).padStart(2, '0')}-${String(parseInt(parts[2])).padStart(2, '0')}`
+            }
+          }
+          return null
+        }
         
         // 按日期统计活动数量（初始化为0）
         const dailyActivityCount = [0, 0, 0, 0, 0, 0, 0]
         
-        // 统计每天有多少个活动
-        weeklyActivities.forEach(activity => {
-          const activityDate = activity.date || defaultDate
-          const dayIndex = weekDays.indexOf(activityDate)
+        // 遍历所有活动，统计本周每天的活动数
+        activities.forEach(activity => {
+          const normalizedDate = normalizeDate(activity.date)
+          if (!normalizedDate) return  // 无日期的活动跳过
+          
+          const dayIndex = weekDays.indexOf(normalizedDate)
           if (dayIndex >= 0 && dayIndex < 7) {
             dailyActivityCount[dayIndex]++
           }
@@ -945,9 +937,22 @@ loadMonthlyData: function() {
     })
   },
   
-  // 加载当前活动主题
-  loadCurrentActivity: function() {
+  // 加载当前活动主题（使用已有活动列表，不再重复查询数据库）
+  loadCurrentActivity: function(allActivities) {
     const that = this
+    
+    // 优先使用传入的活动列表（来自 loadActivityStats 的查询结果）
+    if (allActivities && allActivities.length > 0) {
+      // 找最近的一个进行中活动
+      const active = allActivities
+        .filter(a => a.status === 'active')
+        .sort((a, b) => new Date(b.createTime || 0) - new Date(a.createTime || 0))
+      const currentActivity = active.length > 0 ? active[0] : null
+      that.setData({ currentActivity: currentActivity })
+      return
+    }
+    
+    // 兜底：如果没有传入数据，则查询数据库
     db.collection('activities').where({
       status: 'active'
     }).orderBy('createTime', 'desc').get({

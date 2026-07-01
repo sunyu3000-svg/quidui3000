@@ -244,14 +244,20 @@ Page({
       const [year, month] = currentFilter.split('-').map(Number)
       const startDate = `${year}-${String(month).padStart(2, '0')}-01`
       const endDate = new Date(year, month, 0).toISOString().split('T')[0]
-      // console.log(`查询 ${year}年${month}月 的活动: ${startDate} ~ ${endDate}`)
+      query = query.where({
+        date: db.command.gte(startDate).and(db.command.lte(endDate))
+      })
+    } else {
+      // 默认只显示本月活动，历史活动通过"历史活动"按钮查询
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = now.getMonth() + 1
+      const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+      const endDate = new Date(year, month, 0).toISOString().split('T')[0]
       query = query.where({
         date: db.command.gte(startDate).and(db.command.lte(endDate))
       })
     }
-    // 不指定 filterMonth 时，查询所有活动（不限制日期），已结束的活动也会显示在列表底部
-    
-    // 默认加载所有活动，不限于本月（已结束的活动也会显示在列表底部）
     query = query.orderBy('status', 'asc').orderBy('createTime', 'desc').get({
       timeout: 8000,
       success: function(res) {
