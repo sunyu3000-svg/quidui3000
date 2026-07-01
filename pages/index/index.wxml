@@ -1,6 +1,6 @@
 <view class="container">
   <view class="cover-section">
-    <image class="cover-image" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=dynamic%20soccer%20team%20playing%20on%20green%20field%20at%20sunset%2C%20professional%20sports%20photography%2C%20energetic%2C%20warm%20orange%20and%20blue%20sky&image_size=landscape_16_9" mode="aspectFill" />
+    <image class="cover-image" src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80" mode="aspectFill" />
     <view class="cover-overlay">
       <view class="header">
         <view class="logo">⚽</view>
@@ -23,31 +23,6 @@
         </view>
       </view>
     </view>
-  </view>
-
-  <!-- 最近活动快捷入口 -->
-  <view class="recent-section" wx:if="{{showRecentActivities}}">
-    <view class="section-header">
-      <text class="section-title">📋 最近活动</text>
-      <text class="section-more" bindtap="goToSignup">更多 ›</text>
-    </view>
-    <scroll-view class="recent-scroll" scroll-x enable-flex>
-      <view class="recent-card" wx:for="{{recentActivities}}" wx:key="_id" bindtap="goToDetailFromRecent" data-activity="{{item}}">
-        <view class="recent-card-status {{item.displayStatus === '报名中' ? 'active' : 'ended'}}">{{item.displayStatus}}</view>
-        <text class="recent-card-title">{{item.title || '未命名活动'}}</text>
-        <view class="recent-card-meta">
-          <text class="recent-card-date">📅 {{item.date || '待定'}}</text>
-          <text class="recent-card-location">📍 {{item.location || '待定'}}</text>
-        </view>
-        <view class="recent-card-footer">
-          <view class="recent-card-signups">
-            <text wx:if="{{item.signups && item.signups.length}}">{{item.signups.length}}人已报名</text>
-            <text wx:else>0人报名</text>
-          </view>
-          <text class="recent-card-arrow">→</text>
-        </view>
-      </view>
-    </scroll-view>
   </view>
 
   <!-- 周活跃度图表 -->

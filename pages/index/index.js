@@ -112,8 +112,6 @@ Page({
     pieGradient: '',
     topPlayers: [],
     doveRankings: [],  // 鸽子榜数据
-    recentActivities: [],  // 最近活动
-    showRecentActivities: false,
     statAnimationsDone: false  // 统计数字动画是否已完成
   },
 
@@ -161,55 +159,6 @@ Page({
       this.animateNumber('stats.totalFees', parseFloat(stats.totalFees) || 0, 600)
     }, 300)
     this.setData({ statAnimationsDone: true })
-  },
-
-  // 加载最近活动（用于首页快捷入口卡片）
-  loadRecentActivities: function() {
-    const that = this
-    db.collection('activities').orderBy('createTime', 'desc').limit(5).get({
-      timeout: 8000,
-      success: function(res) {
-        const activities = (res.data || []).map(a => ({
-          ...a,
-          displayStatus: that.getActivityDisplayStatus(a)
-        }))
-        that.setData({ 
-          recentActivities: activities,
-          showRecentActivities: activities.length > 0
-        })
-      },
-      fail: function() {
-        that.setData({ showRecentActivities: false })
-      }
-    })
-  },
-
-  // 根据活动数据返回显示状态
-  getActivityDisplayStatus: function(activity) {
-    if (activity.status === 'ended' || activity.status === 'expired') return '已结束'
-    if (activity.status === 'cancelled') return '已取消'
-    if (activity.date) {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const activityDate = new Date(activity.date)
-      activityDate.setHours(0, 0, 0, 0)
-      if (activityDate < today) return '已结束'
-    }
-    return '报名中'
-  },
-
-  // 跳转到活动详情
-  goToDetailFromRecent: function(e) {
-    const activity = e.currentTarget.dataset.activity
-    const activityId = activity._id || activity.id
-    if (!activityId) {
-      wx.showToast({ title: '活动信息无效', icon: 'none' })
-      return
-    }
-    let url = `/pages/detail/detail?id=${activityId}&title=${encodeURIComponent(activity.title || '活动')}&date=${encodeURIComponent(activity.date || '')}&time=${encodeURIComponent(activity.time || '')}&location=${encodeURIComponent(activity.location || '')}&maxPlayers=${activity.maxPlayers || 21}`
-    if (activity._id) url += `&_id=${encodeURIComponent(activity._id)}`
-    if (activity.status) url += `&status=${encodeURIComponent(activity.status)}`
-    wx.navigateTo({ url: url })
   },
 
   onLoad: function() {
@@ -390,8 +339,6 @@ Page({
         that.loadTopPlayersFromDatabase()
         that.loadTotalFees()
         that.loadDoveRankings()
-        that.loadRecentActivities()
-        
         // 数据加载完成后触发统计数字滚动动画
         setTimeout(() => {
           that.animateStatsCards()

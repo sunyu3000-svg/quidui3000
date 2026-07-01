@@ -7,8 +7,20 @@
 .cover-section {
   position: relative;
   width: 100%;
-  height: 400rpx;
+  height: 420rpx;
   overflow: hidden;
+}
+
+.cover-section::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80rpx;
+  background: linear-gradient(180deg, transparent 0%, #f5f5f5 100%);
+  z-index: 2;
+  pointer-events: none;
 }
 
 .cover-image {
@@ -23,12 +35,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(185, 28, 28, 0.75) 0%, rgba(153, 27, 27, 0.88) 40%, rgba(127, 29, 29, 0.95) 100%);
+  background: linear-gradient(180deg, rgba(185, 28, 28, 0.6) 0%, rgba(153, 27, 27, 0.78) 50%, rgba(100, 20, 20, 0.92) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .header {
@@ -141,7 +153,9 @@
 /* 统计卡片样式 */
 .stats-section {
   padding: 0 30rpx;
-  margin-top: 0;
+  margin-top: -20rpx;
+  position: relative;
+  z-index: 3;
 }
 
 .stats-grid {
@@ -157,7 +171,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8rpx 28rpx rgba(0, 0, 0, 0.06);
   border: 1rpx solid rgba(0, 0, 0, 0.03);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   position: relative;
@@ -250,134 +264,7 @@
   transition: color 0.3s ease;
 }
 
-/* ===== 最近活动快捷入口 ===== */
-.recent-section {
-  margin: 0 30rpx 30rpx;
-}
-
-.recent-section .section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20rpx;
-  padding: 0;
-}
-
-.recent-section .section-title {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.section-more {
-  font-size: 26rpx;
-  color: #dc2626;
-  padding: 8rpx 16rpx;
-  background: rgba(220, 38, 38, 0.06);
-  border-radius: 20rpx;
-}
-
-.recent-scroll {
-  width: 100%;
-  white-space: nowrap;
-}
-
-.recent-card {
-  display: inline-block;
-  width: 280rpx;
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 24rpx;
-  margin-right: 20rpx;
-  box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.06);
-  white-space: normal;
-  vertical-align: top;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.recent-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 6rpx;
-  background: linear-gradient(90deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
-  border-radius: 24rpx 24rpx 0 0;
-}
-
-.recent-card:active {
-  transform: scale(0.97);
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
-}
-
-.recent-card-status {
-  display: inline-block;
-  font-size: 20rpx;
-  padding: 4rpx 14rpx;
-  border-radius: 12rpx;
-  margin-bottom: 16rpx;
-  font-weight: 500;
-}
-
-.recent-card-status.active {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-}
-
-.recent-card-status.ended {
-  background: rgba(107, 114, 128, 0.1);
-  color: #9ca3af;
-}
-
-.recent-card-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #1f2937;
-  display: block;
-  margin-bottom: 16rpx;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.recent-card-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-  margin-bottom: 16rpx;
-}
-
-.recent-card-date,
-.recent-card-location {
-  font-size: 22rpx;
-  color: #6b7280;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.recent-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 14rpx;
-  border-top: 1rpx solid #f3f4f6;
-}
-
-.recent-card-signups {
-  font-size: 22rpx;
-  color: #dc2626;
-}
-
-.recent-card-arrow {
-  font-size: 24rpx;
-  color: #d1d5db;
-}
-
-/* ===== 图表区域（原有样式继续） ===== */
+/* ===== 图表区域 ===== */
 .chart-section {
   margin: 30rpx;
   background: #ffffff;
@@ -386,6 +273,18 @@
   box-shadow: 0 10rpx 40rpx rgba(0, 0, 0, 0.05);
   border: 1rpx solid rgba(0, 0, 0, 0.03);
   transition: box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 36rpx;
+  right: 36rpx;
+  height: 3rpx;
+  background: linear-gradient(90deg, transparent 0%, rgba(220, 38, 38, 0.15) 20%, rgba(220, 38, 38, 0.25) 50%, rgba(220, 38, 38, 0.15) 80%, transparent 100%);
 }
 
 .section-header {
@@ -399,6 +298,17 @@
   font-size: 36rpx;
   font-weight: 700;
   color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.section-title::before {
+  content: '';
+  width: 6rpx;
+  height: 28rpx;
+  background: linear-gradient(180deg, #dc2626 0%, #ef4444 100%);
+  border-radius: 3rpx;
 }
 
 .section-subtitle {
