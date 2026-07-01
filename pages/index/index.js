@@ -109,8 +109,107 @@ Page({
       data: [8, 12, 15, 10, 18, 22]
     },
     activityTypeData: [],
+    pieGradient: '',
     topPlayers: [],
-    doveRankings: []  // 鸽子榜数据
+    doveRankings: [],  // 鸽子榜数据
+    recentActivities: [],  // 最近活动
+    showRecentActivities: false,
+    statAnimationsDone: false  // 统计数字动画是否已完成
+  },
+
+  // 数字滚动动画（easeOutCubic 缓动）
+  animateNumber: function(key, targetValue, duration) {
+    const that = this
+    duration = duration || 800
+    const startTime = Date.now()
+    
+    const step = function() {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      const current = Math.round(targetValue * eased)
+      
+      const updateData = {}
+      updateData[key] = current
+      that.setData(updateData)
+      
+      if (progress < 1) {
+        setTimeout(step, 16)
+      } else {
+        // 确保最终值精确
+        const finalData = {}
+        finalData[key] = targetValue
+        that.setData(finalData)
+      }
+    }
+    
+    step()
+  },
+
+  // 触发所有统计卡片的数字滚动动画
+  animateStatsCards: function() {
+    const stats = this.data.stats
+    // 每个数字错开一点时间，形成递进效果
+    this.animateNumber('stats.totalActivities', stats.totalActivities, 600)
+    setTimeout(() => {
+      this.animateNumber('stats.ongoingActivities', stats.ongoingActivities, 600)
+    }, 100)
+    setTimeout(() => {
+      this.animateNumber('stats.activeUsers', stats.activeUsers, 600)
+    }, 200)
+    setTimeout(() => {
+      this.animateNumber('stats.totalFees', parseFloat(stats.totalFees) || 0, 600)
+    }, 300)
+    this.setData({ statAnimationsDone: true })
+  },
+
+  // 加载最近活动（用于首页快捷入口卡片）
+  loadRecentActivities: function() {
+    const that = this
+    db.collection('activities').orderBy('createTime', 'desc').limit(5).get({
+      timeout: 8000,
+      success: function(res) {
+        const activities = (res.data || []).map(a => ({
+          ...a,
+          displayStatus: that.getActivityDisplayStatus(a)
+        }))
+        that.setData({ 
+          recentActivities: activities,
+          showRecentActivities: activities.length > 0
+        })
+      },
+      fail: function() {
+        that.setData({ showRecentActivities: false })
+      }
+    })
+  },
+
+  // 根据活动数据返回显示状态
+  getActivityDisplayStatus: function(activity) {
+    if (activity.status === 'ended' || activity.status === 'expired') return '已结束'
+    if (activity.status === 'cancelled') return '已取消'
+    if (activity.date) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const activityDate = new Date(activity.date)
+      activityDate.setHours(0, 0, 0, 0)
+      if (activityDate < today) return '已结束'
+    }
+    return '报名中'
+  },
+
+  // 跳转到活动详情
+  goToDetailFromRecent: function(e) {
+    const activity = e.currentTarget.dataset.activity
+    const activityId = activity._id || activity.id
+    if (!activityId) {
+      wx.showToast({ title: '活动信息无效', icon: 'none' })
+      return
+    }
+    let url = `/pages/detail/detail?id=${activityId}&title=${encodeURIComponent(activity.title || '活动')}&date=${encodeURIComponent(activity.date || '')}&time=${encodeURIComponent(activity.time || '')}&location=${encodeURIComponent(activity.location || '')}&maxPlayers=${activity.maxPlayers || 21}`
+    if (activity._id) url += `&_id=${encodeURIComponent(activity._id)}`
+    if (activity.status) url += `&status=${encodeURIComponent(activity.status)}`
+    wx.navigateTo({ url: url })
   },
 
   onLoad: function() {
@@ -260,7 +359,10 @@ Page({
         const defaultDate = formatDateLocal(saturday)
         
         const weeklyActivities = monthlyActivities.filter(item => {
-          const activityDate = normalizeDate(item.date) || defaultDate
+          // 无日期活动不计入本周统计
+          if (!item.date) return false
+          const activityDate = normalizeDate(item.date)
+          if (!activityDate) return false
           const isInWeek = activityDate >= weekStart && activityDate <= weekEnd
           return isInWeek
         })
@@ -280,33 +382,20 @@ Page({
         
         that.loadWeeklySignupCount(weeklyActivities)
         
-        setTimeout(() => {
-          that.loadCurrentActivity(monthlyActivities)
-        }, 500)
+        // 并行加载其他数据，提升首页加载速度
+        that.loadCurrentActivity(monthlyActivities)
+        that.loadWeeklyTrendData()
+        that.loadMonthlyData()
+        that.loadActivityTypeData()
+        that.loadTopPlayersFromDatabase()
+        that.loadTotalFees()
+        that.loadDoveRankings()
+        that.loadRecentActivities()
         
+        // 数据加载完成后触发统计数字滚动动画
         setTimeout(() => {
-          that.loadWeeklyTrendData()
-        }, 1000)
-        
-        setTimeout(() => {
-          that.loadMonthlyData()
-        }, 1500)
-        
-        setTimeout(() => {
-          that.loadActivityTypeData()
-        }, 2000)
-        
-        setTimeout(() => {
-          that.loadTopPlayersFromDatabase()
-        }, 2500)
-        
-        setTimeout(() => {
-          that.loadTotalFees()
-        }, 3000)
-        
-        setTimeout(() => {
-          that.loadDoveRankings()
-        }, 3500)
+          that.animateStatsCards()
+        }, 400)
       },
       fail: function() {
         // 查询失败，使用默认值
@@ -443,36 +532,115 @@ loadActivityTypeData: function() {
     success: function(res) {
       const activities = res.data || []
       
-      // 统计活动类型分布
+      const normalizeTypeName = function(type) {
+        if (!type) return '其他'
+        type = type.toString().trim()
+        type = type.replace(/[\uFEFF\u200B\u200C\u200D\u2060\u3000]/g, '')
+        type = type.replace(/[\s\t\n\r]/g, '')
+        const fullWidthMap = {
+          '１': '1', '２': '2', '３': '3', '４': '4', '５': '5',
+          '６': '6', '７': '7', '８': '8', '９': '9', '０': '0',
+          '（': '(', '）': ')', '，': ',', '。': '.', '：': ':'
+        }
+        type = type.replace(/[\uFF01-\uFF5E]/g, function(char) {
+          return String.fromCharCode(char.charCodeAt(0) - 0xFEE0)
+        })
+        type = type.replace(/[\u3000-\u303F]/g, '')
+        const typeNameMap = {
+          '爬山': '爬山', '爬': '爬山', '爬爬山': '爬山',
+          '吃饭': '吃饭', '吃': '吃饭', '聚餐': '吃饭', '聚餐吃饭': '吃饭',
+          '游泳': '游泳', '游': '游泳', '游咏': '游泳', '咏游': '游泳',
+          '唱歌': '唱歌', '唱': '唱歌', 'K歌': '唱歌', 'k歌': '唱歌',
+          '其他': '其他', '其': '其他', '未知': '其他', '未分类': '其他',
+          '跑步': '跑步', '跑': '跑步', '慢跑': '跑步',
+          '骑行': '骑行', '骑车': '骑行', '单车': '骑行', '自行车': '骑行',
+          '羽毛球': '羽毛球', '羽球': '羽毛球', '打羽毛球': '羽毛球',
+          '篮球': '篮球', '打球': '篮球', '打篮球': '篮球',
+          '健身': '健身', '健身房': '健身', '锻炼': '健身',
+          '瑜伽': '瑜伽', '瑜珈': '瑜伽',
+          '电影': '电影', '看电影': '电影', '观影': '电影',
+          '旅游': '旅游', '旅行': '旅游', '游玩': '旅游',
+          '烧烤': '烧烤', 'BBQ': '烧烤', 'bbq': '烧烤',
+          '露营': '露营', '野营': '露营',
+          '桌游': '桌游', '桌面游戏': '桌游',
+          '麻将': '麻将', '打麻将': '麻将',
+          '剧本杀': '剧本杀', '角色扮演': '剧本杀',
+          '温泉': '温泉', '泡温泉': '温泉',
+          '台球': '台球', '桌球': '台球',
+          '网球': '网球', '打网球': '网球',
+          '排球': '排球', '打排球': '排球',
+          '保龄球': '保龄球', '保龄': '保龄球',
+          '高尔夫': '高尔夫', '高尔夫球': '高尔夫',
+          '滑雪': '滑雪', '滑冰': '滑雪',
+          '攀岩': '攀岩', '攀登': '攀岩',
+          '潜水': '潜水', '浮潜': '潜水',
+          '冲浪': '冲浪',
+          '咖啡': '咖啡', '喝咖啡': '咖啡',
+          '奶茶': '奶茶', '喝奶茶': '奶茶',
+          '下午茶': '下午茶',
+          '钓鱼': '钓鱼', '垂钓': '钓鱼',
+          '棋牌': '棋牌', '下棋': '棋牌',
+          '密室逃脱': '密室逃脱', '密室': '密室逃脱',
+          'KTV': 'KTV', '唱歌KTV': 'KTV',
+          '蹦迪': '蹦迪', '迪斯科': '蹦迪',
+          '酒吧': '酒吧', '泡吧': '酒吧',
+          'SPA': 'SPA', '按摩': '按摩', '推拿': '按摩',
+          '队内赛': '队内赛', '内部比赛': '队内赛',
+          '训练赛': '训练赛', '训练': '训练赛',
+          '友谊赛': '友谊赛', '友谊': '友谊赛', '交流赛': '友谊赛'
+        }
+        return typeNameMap[type] || type
+      }
+      
       const typeCount = {}
       activities.forEach(activity => {
-        const type = activity.type || activity.activityType || '其他'
+        let type = activity.type || activity.activityType || '其他'
+        type = normalizeTypeName(type)
         typeCount[type] = (typeCount[type] || 0) + 1
       })
       
-      // 计算总数
       const total = Object.values(typeCount).reduce((sum, count) => sum + count, 0)
       
-      // 转换为饼图数据格式（计算百分比）
-      const colors = ['#dc2626', '#ef4444', '#f87171', '#fca5a5', '#fed7aa', '#fef3c7', '#dcfce7']
+      const vividColors = [
+        '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6',
+        '#3b82f6', '#8b5cf6', '#ec4899', '#6366f1', '#06b6d4',
+        '#f43f5e', '#fb923c', '#facc15', '#4ade80', '#2dd4bf',
+        '#60a5fa', '#a78bfa', '#f472b6', '#818cf8', '#22d3ee'
+      ]
+      
       const activityTypeData = Object.keys(typeCount).map((key, index) => ({
         name: key,
         value: total > 0 ? Math.round((typeCount[key] / total) * 100) : 0,
-        color: colors[index % colors.length]
+        color: vividColors[index % vividColors.length]
       }))
       
-      that.setData({ activityTypeData: activityTypeData })
+      activityTypeData.sort((a, b) => b.value - a.value)
+      
+      let pieGradient = ''
+      let currentAngle = 0
+      activityTypeData.forEach(item => {
+        const angle = (item.value / 100) * 360
+        const startAngle = currentAngle
+        const endAngle = currentAngle + angle
+        pieGradient += `${item.color} ${startAngle}deg ${endAngle}deg,`
+        currentAngle = endAngle
+      })
+      pieGradient = pieGradient.slice(0, -1) || '#ef4444 0deg 360deg'
+      
+      that.setData({ 
+        activityTypeData: activityTypeData,
+        pieGradient: pieGradient
+      })
     },
     fail: function(err) {
-      // console.error('查询活动类型失败:', err)
-      // 使用默认数据
       that.setData({
         activityTypeData: [
-          { name: '队内赛', value: 50, color: '#dc2626' },
-          { name: '训练赛', value: 30, color: '#ef4444' },
-          { name: '吃饭', value: 1, color: '#f87171' },
-          { name: '友谊赛', value: 1, color: '#fca5a5' }
-        ]
+          { name: '队内赛', value: 40, color: '#ef4444' },
+          { name: '训练赛', value: 30, color: '#3b82f6' },
+          { name: '吃饭', value: 15, color: '#f97316' },
+          { name: '友谊赛', value: 15, color: '#22c55e' }
+        ],
+        pieGradient: '#ef4444 0deg 144deg, #3b82f6 144deg 252deg, #f97316 252deg 306deg, #22c55e 306deg 360deg'
       })
     }
   })
@@ -640,13 +808,15 @@ loadMonthlyData: function() {
             }
           }
         } else {
+          // 无日期活动不计入月度统计，避免数据偏差
           noDateCount++
         }
       })
       
-      const now = new Date()
-      const currentMonth = now.getMonth()
-      monthlyData[currentMonth] += noDateCount
+      // 无日期活动不强制归入当前月，保持月度统计准确
+      // const now = new Date()
+      // const currentMonth = now.getMonth()
+      // monthlyData[currentMonth] += noDateCount
       
       const total = monthlyData.reduce((sum, count) => sum + count, 0)
       

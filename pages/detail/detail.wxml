@@ -113,6 +113,65 @@
     </view>
   </view>
 
+  <!-- 评论区 -->
+  <view class="comments-section">
+    <view class="comments-header">
+      <text class="comments-title">💬 评论 ({{comments.length}})</text>
+    </view>
+
+    <view class="comments-list" wx:if="{{comments.length > 0}}">
+      <view class="comment-item" wx:for="{{comments}}" wx:key="_id">
+        <view class="comment-avatar">
+          <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" />
+          <text wx:else class="comment-avatar-text">{{item.nickName ? item.nickName.charAt(0) : '?'}}</text>
+        </view>
+        <view class="comment-body">
+          <view class="comment-header">
+            <text class="comment-nickname">{{item.nickName || '未知用户'}}</text>
+            <text class="comment-time">{{item.createTime}}</text>
+          </view>
+          <view class="comment-content" wx:if="{{!item.replyTo}}">
+            <text>{{item.content}}</text>
+          </view>
+          <view class="comment-content reply" wx:else>
+            <text class="reply-tag">回复 @{{item.replyToNickName}}：</text>
+            <text>{{item.content}}</text>
+          </view>
+          <view class="comment-actions">
+            <text class="comment-reply-btn" bindtap="replyComment" data-comment="{{item}}">回复</text>
+            <text class="comment-delete-btn" wx:if="{{item.isOwner || isOrganizer}}" bindtap="deleteComment" data-comment="{{item}}">删除</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="comments-empty" wx:else>
+      <text class="comments-empty-icon">💭</text>
+      <text class="comments-empty-text">暂无评论，来说点什么吧</text>
+    </view>
+
+    <!-- 评论输入区 -->
+    <view class="comment-input-bar" wx:if="{{activity.status !== '已结束'}}">
+      <view class="reply-hint" wx:if="{{replyTo}}">
+        <text>回复 @{{replyToNickName}}：</text>
+        <text class="reply-cancel" bindtap="cancelReply">✕</text>
+      </view>
+      <view class="comment-input-row">
+        <input 
+          class="comment-input" 
+          placeholder="{{replyTo ? '输入回复...' : '说点什么...'}}" 
+          value="{{commentInput}}"
+          bindinput="onCommentInput"
+          maxlength="500"
+          confirm-type="send"
+          bindconfirm="submitComment"
+          focus="{{commentFocus}}"
+        />
+        <button class="comment-send-btn" bindtap="submitComment" loading="{{commentSubmitting}}">发送</button>
+      </view>
+    </view>
+  </view>
+
   <view class="bottom-bar">
     <block wx:if="{{activity.status === 'ended' || activity.status === '已结束'}}">
       <view class="ended-text">活动已结束</view>

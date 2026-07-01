@@ -134,11 +134,35 @@ Page({
       success: function(res) {
         const userData = res.data
         const newUserId = userData._id || userId
+        let avatarUrl = (userData.avatarUrl && userData.avatarUrl.trim()) || (userInfo && userInfo.avatarUrl) || ''
+        
+        // 如果users集合里没有头像，尝试从signups获取
+        if (!avatarUrl && userData.nickName) {
+          that.fetchAvatarFromSignups(userData.nickName, function(fetchedAvatar) {
+            avatarUrl = fetchedAvatar || avatarUrl
+            that.setData({
+              userId: newUserId,
+              userInfo: {
+                nickName: userData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
+                avatarUrl: avatarUrl,
+                wechatName: userData.wechatName || (userInfo && userInfo.nickName) || '默认昵称',
+                registerTime: userData.registerTime || '',
+                position: userData.position || '',
+                jerseyNumber: userData.jerseyNumber || ''
+              }
+            })
+            that.loadRemarkName()
+            that.loadAllStats(newUserId)
+            if (callback) callback()
+          })
+          return
+        }
+        
         that.setData({
           userId: newUserId,
           userInfo: {
             nickName: userData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
-            avatarUrl: (userData.avatarUrl && userData.avatarUrl.trim()) || (userInfo && userInfo.avatarUrl) || '',
+            avatarUrl: avatarUrl,
             wechatName: userData.wechatName || (userInfo && userInfo.nickName) || '默认昵称',
             registerTime: userData.registerTime || '',
             position: userData.position || '',
@@ -155,6 +179,44 @@ Page({
     })
   },
 
+  // 从signups集合获取头像
+  fetchAvatarFromSignups: function(nickName, callback) {
+    const that = this
+    if (!nickName) {
+      if (callback) callback('')
+      return
+    }
+    
+    db.collection('signups').where({
+      nickName: nickName
+    }).orderBy('signupTime', 'desc').limit(1).get({
+      success: function(res) {
+        if (res.data.length > 0 && res.data[0].avatarUrl) {
+          if (callback) callback(res.data[0].avatarUrl)
+        } else {
+          // 如果signups里没有，尝试从users集合通过nickName查
+          db.collection('users').where({
+            nickName: nickName
+          }).limit(1).get({
+            success: function(userRes) {
+              if (userRes.data.length > 0 && userRes.data[0].avatarUrl) {
+                if (callback) callback(userRes.data[0].avatarUrl)
+              } else {
+                if (callback) callback('')
+              }
+            },
+            fail: function() {
+              if (callback) callback('')
+            }
+          })
+        }
+      },
+      fail: function() {
+        if (callback) callback('')
+      }
+    })
+  },
+
   loadUserInfoByNickName: function(nickName, callback) {
     const that = this
     const { userInfo } = this.data
@@ -166,11 +228,35 @@ Page({
         if (res.data.length > 0) {
           const userData = res.data[0]
           const newUserId = userData._id || nickName
+          let avatarUrl = (userData.avatarUrl && userData.avatarUrl.trim()) || (userInfo && userInfo.avatarUrl) || ''
+          
+          // 如果users集合里没有头像，尝试从signups获取
+          if (!avatarUrl && userData.nickName) {
+            that.fetchAvatarFromSignups(userData.nickName, function(fetchedAvatar) {
+              avatarUrl = fetchedAvatar || avatarUrl
+              that.setData({
+                userId: newUserId,
+                userInfo: {
+                  nickName: userData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
+                  avatarUrl: avatarUrl,
+                  wechatName: userData.wechatName || (userInfo && userInfo.nickName) || '默认昵称',
+                  registerTime: userData.registerTime || '',
+                  position: userData.position || '',
+                  jerseyNumber: userData.jerseyNumber || ''
+                }
+              })
+              that.loadRemarkName()
+              that.loadAllStats(newUserId)
+              if (callback) callback()
+            })
+            return
+          }
+          
           that.setData({
             userId: newUserId,
             userInfo: {
               nickName: userData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
-              avatarUrl: (userData.avatarUrl && userData.avatarUrl.trim()) || (userInfo && userInfo.avatarUrl) || '',
+              avatarUrl: avatarUrl,
               wechatName: userData.wechatName || (userInfo && userInfo.nickName) || '默认昵称',
               registerTime: userData.registerTime || '',
               position: userData.position || '',
@@ -215,11 +301,35 @@ Page({
         if (res.data.length > 0) {
           const signupData = res.data[0]
           newUserId = signupData.userId || signupData._openid || nickName
+          let avatarUrl = (signupData.avatarUrl && signupData.avatarUrl.trim()) || (userInfo && userInfo.avatarUrl) || ''
+          
+          // 如果signups记录里没有头像，再查一次最新的signups
+          if (!avatarUrl && signupData.nickName) {
+            that.fetchAvatarFromSignups(signupData.nickName, function(fetchedAvatar) {
+              avatarUrl = fetchedAvatar || avatarUrl
+              that.setData({
+                userId: newUserId,
+                userInfo: {
+                  nickName: signupData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
+                  avatarUrl: avatarUrl,
+                  wechatName: signupData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
+                  registerTime: '',
+                  position: '',
+                  jerseyNumber: ''
+                }
+              })
+              that.loadRemarkName()
+              that.loadAllStats(newUserId)
+              if (callback) callback()
+            })
+            return
+          }
+          
           that.setData({
             userId: newUserId,
             userInfo: {
               nickName: signupData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
-              avatarUrl: (signupData.avatarUrl && signupData.avatarUrl.trim()) || (userInfo && userInfo.avatarUrl) || '',
+              avatarUrl: avatarUrl,
               wechatName: signupData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
               registerTime: '',
               position: '',
@@ -315,11 +425,9 @@ Page({
       }
     })
 
-    db.collection('likes').where(db.command.or([
-      { toUserId: userId },
-      { toNickName: userId },
-      { toNickName: targetNickName }
-    ])).count({
+    db.collection('likes').where({
+      fromOpenId: myInfo.openId
+    }).count({
       success: function(res) {
         that.setData({ likeCount: res.total })
       },

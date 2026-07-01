@@ -19,7 +19,16 @@ Page({
     hasSignedUp: false,
     loading: false,
     lastLoadTime: 0,
-    isOrganizer: false
+    isOrganizer: false,
+    // 评论相关
+    comments: [],
+    commentInput: '',
+    replyTo: null,
+    replyToNickName: '',
+    showCommentInput: false,
+    commentLoading: false,
+    commentSubmitting: false,
+    commentFocus: false
   },
 
   onLoad: function(options) {
@@ -270,6 +279,8 @@ Page({
             loading: false,
             lastLoadTime: Date.now()
           })
+          // 加载评论
+          that.loadComments()
         })
         
         if (that.data.userInfo) {
@@ -1070,5 +1081,191 @@ Page({
         }
       }
     })
+  },
+
+  // ========== 评论功能 ==========
+
+  // 加载评论列表
+  loadComments: function() {
+    const that = this
+    const activityId = this.data.activity._id || this.data.activity.id
+    if (!activityId) return
+
+    that.setData({ commentLoading: true })
+
+    db.collection('comments').where({
+      activityId: activityId
+    }).orderBy('createTime', 'asc').limit(100).get({
+      timeout: 8000,
+      success: function(res) {
+        const comments = (res.data || []).map(c => ({
+          ...c,
+          isOwner: false  // 稍后由 checkCommentOwnership 设置
+        }))
+
+        that.setData({ comments: comments, commentLoading: false })
+        that.checkCommentOwnership(comments)
+      },
+      fail: function() {
+        that.setData({ comments: [], commentLoading: false })
+      }
+    })
+  },
+
+  // 检查评论所有权
+  checkCommentOwnership: function(comments) {
+    const that = this
+    wx.cloud.callFunction({
+      name: 'getOpenId',
+      success: function(res) {
+        const myOpenId = res.result.openid
+        const updated = comments.map(c => ({
+          ...c,
+          isOwner: c._openid === myOpenId
+        }))
+        that.setData({ comments: updated })
+      },
+      fail: function() {
+        // 无法获取openid，都不标记为owner
+      }
+    })
+  },
+
+  // 输入评论内容
+  onCommentInput: function(e) {
+    this.setData({ commentInput: e.detail.value })
+  },
+
+  // 提交评论
+  submitComment: function() {
+    const that = this
+    const content = (this.data.commentInput || '').trim()
+    if (!content) {
+      wx.showToast({ title: '请输入评论内容', icon: 'none' })
+      return
+    }
+    if (content.length > 500) {
+      wx.showToast({ title: '评论不能超过500字', icon: 'none' })
+      return
+    }
+
+    const userInfo = this.data.userInfo
+    if (!userInfo || !userInfo.nickName) {
+      wx.showToast({ title: '请先获取用户信息', icon: 'none' })
+      return
+    }
+
+    that.setData({ commentSubmitting: true })
+
+    wx.cloud.callFunction({
+      name: 'getOpenId',
+      success: function(openRes) {
+        const activityId = that.data.activity._id || that.data.activity.id
+        const comment = {
+          activityId: activityId,
+          nickName: userInfo.nickName,
+          avatarUrl: userInfo.avatarUrl || '',
+          content: content,
+          replyTo: that.data.replyTo || null,
+          replyToNickName: that.data.replyToNickName || '',
+          createTime: db.serverDate()
+        }
+
+        db.collection('comments').add({
+          data: comment,
+          success: function() {
+            that.setData({
+              commentInput: '',
+              replyTo: null,
+              replyToNickName: '',
+              commentSubmitting: false
+            })
+            wx.showToast({ title: '评论成功', icon: 'success' })
+            that.loadComments()
+          },
+          fail: function(err) {
+            that.setData({ commentSubmitting: false })
+            wx.showToast({ title: '评论失败，请重试', icon: 'none' })
+          }
+        })
+      },
+      fail: function() {
+        that.setData({ commentSubmitting: false })
+        wx.showToast({ title: '获取用户信息失败', icon: 'none' })
+      }
+    })
+  },
+
+  // 回复评论
+  replyComment: function(e) {
+    const comment = e.currentTarget.dataset.comment
+    if (!comment) return
+
+    this.setData({
+      replyTo: comment._id,
+      replyToNickName: comment.nickName || '未知用户',
+      showCommentInput: true
+    })
+
+    // 延迟聚焦输入框（小程序限制）
+    setTimeout(() => {
+      this.setData({ commentFocus: true })
+    }, 300)
+  },
+
+  // 取消回复
+  cancelReply: function() {
+    this.setData({
+      replyTo: null,
+      replyToNickName: '',
+      commentInput: '',
+      commentFocus: false
+    })
+  },
+
+  // 删除评论
+  deleteComment: function(e) {
+    const that = this
+    const comment = e.currentTarget.dataset.comment
+    if (!comment || !comment._id) return
+
+    wx.showModal({
+      title: '删除评论',
+      content: '确定要删除这条评论吗？',
+      confirmColor: '#dc2626',
+      success: function(res) {
+        if (res.confirm) {
+          db.collection('comments').doc(comment._id).remove({
+            success: function() {
+              wx.showToast({ title: '已删除', icon: 'success' })
+              that.loadComments()
+            },
+            fail: function() {
+              wx.showToast({ title: '删除失败', icon: 'none' })
+            }
+          })
+        }
+      }
+    })
+  },
+
+  // 格式化评论时间
+  formatCommentTime: function(createTime) {
+    if (!createTime) return ''
+    const date = new Date(createTime)
+    const now = new Date()
+    const diff = now - date
+    const minute = 60 * 1000
+    const hour = 60 * minute
+    const day = 24 * hour
+
+    if (diff < minute) return '刚刚'
+    if (diff < hour) return Math.floor(diff / minute) + '分钟前'
+    if (diff < day) return Math.floor(diff / hour) + '小时前'
+    if (diff < 7 * day) return Math.floor(diff / day) + '天前'
+
+    const month = date.getMonth() + 1
+    const dayNum = date.getDate()
+    return month + '月' + dayNum + '日'
   }
 })

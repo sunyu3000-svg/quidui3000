@@ -48,8 +48,8 @@ Page({
   },
 
   checkAdmin: function() {
-    // 设置为超级管理员
-    // console.log('ledger: 设置为超级管理员')
+    // 设置为普通用户
+    // console.log('ledger: 设置为普通用户')
     this.setData({ isAdmin: true })
     
     // 原有逻辑（已注释）

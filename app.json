@@ -46,6 +46,7 @@
     ]
   },
   "cloud": true,
+  "lazyCodeLoading": "requiredComponents",
   "requiredPrivateInfos": ["chooseLocation"],
   "permission": {
     "scope.userLocation": {

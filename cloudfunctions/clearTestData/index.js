@@ -1,6 +1,3 @@
-// 云函数：清空测试数据
-// 使用方法：在小程序中调用 wx.cloud.callFunction({ name: 'clearTestData', data: { collections: ['activities', 'signups', 'doves', 'likes', 'visitors', 'impressions'] } })
-
 const cloud = require('wx-server-sdk')
 
 cloud.init({
@@ -8,43 +5,72 @@ cloud.init({
 })
 
 const db = cloud.database()
+const _ = db.command
 
 exports.main = async (event, context) => {
   try {
     const collections = event.collections || ['activities', 'signups', 'doves', 'likes', 'visitors', 'impressions']
-    let totalDeleted = 0
+    const results = []
     
     for (const collectionName of collections) {
-      // 获取该集合的所有记录
-      const result = await db.collection(collectionName).limit(1000).get()
-      let records = result.data || []
-      
-      // 如果有更多记录，继续获取
-      let skip = 0
-      while (records.length > 0 && skip < 10000) {
-        // 删除记录
-        for (const record of records) {
-          await db.collection(collectionName).doc(record._id).remove()
-          totalDeleted++
+      try {
+        let deletedCount = 0
+        
+        const firstResult = await db.collection(collectionName).limit(100).get()
+        let records = firstResult.data || []
+        
+        console.log(`开始清理 ${collectionName}，当前记录数: ${records.length}`)
+        
+        while (records.length > 0) {
+          const batchDelete = db.collection(collectionName).where({
+            _id: _.in(records.map(r => r._id))
+          }).remove()
+          
+          const deleteResult = await batchDelete
+          deletedCount += deleteResult.stats.removed || 0
+          
+          console.log(`  批次删除: ${records.length} 条，实际删除: ${deleteResult.stats.removed}`)
+          
+          const nextResult = await db.collection(collectionName).limit(100).get()
+          records = nextResult.data || []
         }
         
-        skip += records.length
-        const nextResult = await db.collection(collectionName).skip(skip).limit(1000).get()
-        records = nextResult.data || []
+        results.push({
+          collection: collectionName,
+          deleted: deletedCount,
+          success: true
+        })
+        
+        console.log(`完成清理 ${collectionName}，共删除 ${deletedCount} 条`)
+        
+      } catch (collectionErr) {
+        console.error(`清理 ${collectionName} 失败:`, collectionErr)
+        results.push({
+          collection: collectionName,
+          deleted: 0,
+          success: false,
+          error: collectionErr.message
+        })
       }
-      
-      console.log(`已清理 ${collectionName} 集合中的所有数据`)
     }
     
+    const totalDeleted = results.reduce((sum, item) => sum + item.deleted, 0)
+    const allSuccess = results.every(item => item.success)
+    
     return {
-      success: true,
-      message: `成功清理 ${totalDeleted} 条数据`
+      success: allSuccess,
+      totalDeleted: totalDeleted,
+      message: `共清理 ${totalDeleted} 条数据`,
+      details: results
     }
+    
   } catch (err) {
     console.error('清理数据失败:', err)
     return {
       success: false,
-      message: '清理失败: ' + err.message
+      totalDeleted: 0,
+      message: '清理失败: ' + err.message,
+      details: []
     }
   }
 }

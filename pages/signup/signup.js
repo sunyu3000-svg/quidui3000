@@ -248,31 +248,17 @@ Page({
       query = query.where({
         date: db.command.gte(startDate).and(db.command.lte(endDate))
       })
-    } else {
-      // 默认只显示本月活动，历史活动通过"历史活动"按钮查询
-      const now = new Date()
-      const year = now.getFullYear()
-      const month = now.getMonth() + 1
-      const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-      // console.log(`默认查询本月(${year}年${month}月)活动`)
-      // 查询条件：日期 >= 本月初 或者 日期为空/不存在（空日期视为本月活动）
-      query = query.where(db.command.or([
-        { date: db.command.gte(startDate) },
-        { date: '' },
-        { date: db.command.exists(false) }
-      ]))
     }
+    // 不指定 filterMonth 时，查询所有活动（不限制日期），已结束的活动也会显示在列表底部
     
-    // 先按状态排序（报名中优先），再按发布时间排序（最近发布的最上面）
-    query.orderBy('status', 'asc').orderBy('createTime', 'desc').get({
+    // 默认加载所有活动，不限于本月（已结束的活动也会显示在列表底部）
+    query = query.orderBy('status', 'asc').orderBy('createTime', 'desc').get({
       timeout: 8000,
       success: function(res) {
         clearTimeout(timer)
-        // console.log('loadActivities success:', res)
-        // 仅使用数据库真实数据，不添加任何模拟数据
         let activities = res.data || []
         
-        // 获取本周的日期（用于填充无日期的活动）
+        // 获取本周六的日期（用于填充无日期的活动）
         const now = new Date()
         const dayOfWeek = now.getDay()
         const daysUntilSaturday = dayOfWeek === 0 ? 6 : 6 - dayOfWeek
@@ -302,13 +288,8 @@ Page({
           }
         })
         
-        // 活动列表排序：已结束的放最下面，报名中的按时间排序（时间越近越靠前）
+        // 活动列表排序：已结束的放最下面，同状态下日期越近越靠前
         activities.sort((a, b) => {
-          // 解析活动日期
-          const dateA = new Date(a.date)
-          const dateB = new Date(b.date)
-          
-          // 已结束的活动放在下面
           const statusA = a.status === '报名中' ? 0 : 1
           const statusB = b.status === '报名中' ? 0 : 1
           
@@ -316,37 +297,20 @@ Page({
             return statusA - statusB
           }
           
-          // 同状态下，报名中的活动日期越近越靠前，已结束的活动日期越晚越靠前
-          return dateA - dateB
+          // 同状态下，日期越近越靠前（降序）
+          const dateA = new Date(a.date)
+          const dateB = new Date(b.date)
+          return dateB - dateA
         })
         
-        // 活动数量限制：最多显示10个活动
+        // 前端限制：最多显示10个活动（不删除数据库，只在前端限制显示）
         const MAX_ACTIVITIES = 10
-        
-        if (activities.length > MAX_ACTIVITIES) {
-          // console.log('活动数量超过限制，需要删除旧活动:', activities.length)
-          
-          // 获取需要删除的活动（最早结束的活动）
-          const activitiesToDelete = activities.slice(MAX_ACTIVITIES)
-          activities = activities.slice(0, MAX_ACTIVITIES)
-          
-          // console.log('需要删除的活动:', activitiesToDelete)
-          
-          // 删除最早结束的活动
-          activitiesToDelete.forEach(activity => {
-            db.collection('activities').doc(activity._id).remove({
-              success: function() {
-                // console.log('已删除旧活动:', activity.title)
-              },
-              fail: function(err) {
-                // console.error('删除旧活动失败:', err)
-              }
-            })
-          })
-        }
+        const displayActivities = activities.length > MAX_ACTIVITIES 
+          ? activities.slice(0, MAX_ACTIVITIES) 
+          : activities
         
         that.setData({
-          activities: activities,
+          activities: displayActivities,
           loading: false
         })
         

@@ -13,43 +13,41 @@
   <!-- 统计卡片 -->
   <view class="stats-section">
     <view class="stats-grid">
-      <view class="stat-card">
-        <view class="stat-icon-wrapper blue">
-          <text class="stat-icon">📊</text>
+      <view class="stat-card {{statAnimationsDone ? 'stat-animated' : ''}}" wx:for="{{[ {key:'totalActivities', icon:'📊', label:'总活动数', color:'blue'}, {key:'ongoingActivities', icon:'⚡', label:'进行中', color:'green'}, {key:'activeUsers', icon:'⭐', label:'活跃用户', color:'purple'}, {key:'totalFees', icon:'💰', label:'队费结余(元)', color:'gold'} ]}}" wx:key="color">
+        <view class="stat-icon-wrapper {{item.color}}">
+          <text class="stat-icon">{{item.icon}}</text>
         </view>
         <view class="stat-content">
-          <text class="stat-value">{{stats.totalActivities}}</text>
-          <text class="stat-label">总活动数</text>
-        </view>
-      </view>
-      <view class="stat-card">
-        <view class="stat-icon-wrapper green">
-          <text class="stat-icon">⚡</text>
-        </view>
-        <view class="stat-content">
-          <text class="stat-value">{{stats.ongoingActivities}}</text>
-          <text class="stat-label">进行中</text>
-        </view>
-      </view>
-      <view class="stat-card">
-        <view class="stat-icon-wrapper purple">
-          <text class="stat-icon">⭐</text>
-        </view>
-        <view class="stat-content">
-          <text class="stat-value">{{stats.activeUsers}}</text>
-          <text class="stat-label">活跃用户</text>
-        </view>
-      </view>
-      <view class="stat-card">
-        <view class="stat-icon-wrapper gold">
-          <text class="stat-icon">💰</text>
-        </view>
-        <view class="stat-content">
-          <text class="stat-value">{{stats.totalFees}}</text>
-          <text class="stat-label">累计费用(元)</text>
+          <text class="stat-value">{{stats[item.key]}}</text>
+          <text class="stat-label">{{item.label}}</text>
         </view>
       </view>
     </view>
+  </view>
+
+  <!-- 最近活动快捷入口 -->
+  <view class="recent-section" wx:if="{{showRecentActivities}}">
+    <view class="section-header">
+      <text class="section-title">📋 最近活动</text>
+      <text class="section-more" bindtap="goToSignup">更多 ›</text>
+    </view>
+    <scroll-view class="recent-scroll" scroll-x enable-flex>
+      <view class="recent-card" wx:for="{{recentActivities}}" wx:key="_id" bindtap="goToDetailFromRecent" data-activity="{{item}}">
+        <view class="recent-card-status {{item.displayStatus === '报名中' ? 'active' : 'ended'}}">{{item.displayStatus}}</view>
+        <text class="recent-card-title">{{item.title || '未命名活动'}}</text>
+        <view class="recent-card-meta">
+          <text class="recent-card-date">📅 {{item.date || '待定'}}</text>
+          <text class="recent-card-location">📍 {{item.location || '待定'}}</text>
+        </view>
+        <view class="recent-card-footer">
+          <view class="recent-card-signups">
+            <text wx:if="{{item.signups && item.signups.length}}">{{item.signups.length}}人已报名</text>
+            <text wx:else>0人报名</text>
+          </view>
+          <text class="recent-card-arrow">→</text>
+        </view>
+      </view>
+    </scroll-view>
   </view>
 
   <!-- 周活跃度图表 -->
@@ -116,14 +114,7 @@
       <text class="section-title">🎯 活动类型分布</text>
     </view>
     <view class="pie-chart-container">
-      <view class="pie-chart">
-        <view 
-          class="pie-slice" 
-          wx:for="{{activityTypeData}}" 
-          wx:key="index"
-          style="background-color: {{item.color}};"
-        ></view>
-      </view>
+      <view class="pie-chart" style="background: conic-gradient({{pieGradient}});"></view>
       <view class="pie-legend">
         <view 
           class="legend-item" 
