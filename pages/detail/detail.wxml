@@ -1,7 +1,5 @@
 <view class="container">
   <view class="header-image">
-    <view class="header-bg"></view>
-    <view class="header-overlay"></view>
     <view class="header-content">
       <text class="header-title">厦门天涯足球俱乐部</text>
       <text class="header-subtitle">热爱足球 · 享受运动</text>
@@ -9,10 +7,12 @@
   </view>
 
   <view class="club-card">
-    <view class="club-logo">⚽</view>
+    <view class="club-logo">
+      <text class="logo-text">天</text>
+    </view>
     <view class="club-info">
       <text class="club-name">厦门天涯足球俱乐部</text>
-      <text class="club-stats">成员 {{signups.length}} | 活动 11 | 动态 0</text>
+      <text class="club-stats">{{signups.length}} 人报名</text>
     </view>
   </view>
 
@@ -24,49 +24,40 @@
 
   <view class="info-card">
     <view class="info-row">
-      <view class="info-icon-wrap">📅</view>
-      <view class="info-content">
-        <text class="info-label">活动时间</text>
-        <text class="info-value">{{activity.time}}</text>
-      </view>
-      <text class="view-count">👁 80</text>
+      <text class="info-label">活动时间</text>
+      <text class="info-value">{{activity.time}}</text>
     </view>
     
     <view class="info-row">
-      <view class="info-icon-wrap">📍</view>
-      <view class="info-content" bindtap="handleNavigate">
-        <text class="info-label">活动地点</text>
+      <text class="info-label">活动地点</text>
+      <view class="info-value-wrap" bindtap="handleNavigate">
         <text class="info-value">{{activity.location}}</text>
       </view>
       <view class="nav-buttons">
-        <text class="nav-link" bindtap="handleNavigate">场地导航 ›</text>
-        <text class="edit-link" wx:if="{{isOrganizer}}" bindtap="handleEditLocation">修改 ›</text>
+        <text class="nav-link" bindtap="handleNavigate">导航</text>
+        <text class="edit-link" wx:if="{{isOrganizer}}" bindtap="handleEditLocation">修改</text>
       </view>
     </view>
     
     <view class="info-row">
-      <view class="info-icon-wrap">⚽</view>
-      <view class="info-content">
-        <text class="info-label">活动类型</text>
-        <text class="info-value">{{activity.activityType || '足球/平台可见'}}</text>
-      </view>
+      <text class="info-label">活动类型</text>
+      <text class="info-value">{{activity.activityType || '足球'}}</text>
     </view>
     
     <view class="info-row">
-      <view class="info-icon-wrap">💰</view>
-      <view class="info-content">
-        <text class="info-label">收费标准</text>
-        <text class="info-value">{{activity.fee || 'AA制'}}</text>
-      </view>
+      <text class="info-label">收费标准</text>
+      <text class="info-value">{{activity.fee || 'AA制'}}</text>
     </view>
   </view>
 
   <view class="desc-card">
     <view class="author-info">
-      <view class="author-avatar">👤</view>
+      <view class="author-avatar">
+        <text class="author-avatar-text">{{activity.organizer ? activity.organizer.charAt(0) : '?'}}</text>
+      </view>
       <view class="author-detail">
         <text class="author-name">{{activity.organizer || '未知用户'}}</text>
-        <view class="author-stars">★★★★★</view>
+        <text class="author-label">组织者</text>
       </view>
     </view>
     <text class="desc-text">{{activity.description}}</text>
@@ -91,7 +82,7 @@
       <view class="signup-item" wx:for="{{currentList}}" wx:key="index" bindtap="goToUserProfile" data-user="{{item}}">
         <view class="avatar-wrapper">
           <image 
-            wx:if="{{item.avatarUrl}}" 
+            wx:if="{{item.avatarUrl && item.avatarUrl.trim()}}" 
             class="signup-avatar" 
             src="{{item.avatarUrl}}" 
             mode="aspectFill"
@@ -107,7 +98,6 @@
       </view>
       
       <view class="empty-state" wx:if="{{currentList.length === 0}}">
-        <text class="empty-icon">🙋</text>
         <text class="empty-text">暂无{{currentTab === 'signups' ? '报名' : '待定/请假'}}人员</text>
       </view>
     </view>
@@ -116,13 +106,13 @@
   <!-- 评论区 -->
   <view class="comments-section">
     <view class="comments-header">
-      <text class="comments-title">💬 评论 ({{comments.length}})</text>
+      <text class="comments-title">评论 ({{comments.length}})</text>
     </view>
 
     <view class="comments-list" wx:if="{{comments.length > 0}}">
       <view class="comment-item" wx:for="{{comments}}" wx:key="_id">
         <view class="comment-avatar">
-          <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" />
+          <image wx:if="{{item.avatarUrl && item.avatarUrl.trim()}}" src="{{item.avatarUrl}}" mode="aspectFill" />
           <text wx:else class="comment-avatar-text">{{item.nickName ? item.nickName.charAt(0) : '?'}}</text>
         </view>
         <view class="comment-body">
@@ -146,7 +136,6 @@
     </view>
 
     <view class="comments-empty" wx:else>
-      <text class="comments-empty-icon">💭</text>
       <text class="comments-empty-text">暂无评论，来说点什么吧</text>
     </view>
 
@@ -181,7 +170,6 @@
         class="action-btn signup-btn {{currentStatus === 'signups' ? 'active' : ''}}" 
         bindtap="handleSignup"
       >
-        <text class="btn-icon">✅</text>
         <text class="btn-text">报名</text>
       </button>
       <button 

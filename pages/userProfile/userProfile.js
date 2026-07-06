@@ -179,7 +179,7 @@ Page({
     })
   },
 
-  // 从signups集合获取头像
+  // 从signups集合获取头像（查多条记录，取第一条有头像的）
   fetchAvatarFromSignups: function(nickName, callback) {
     const that = this
     if (!nickName) {
@@ -187,32 +187,76 @@ Page({
       return
     }
     
+    // 先查signups集合，不限1条，取最近有头像的记录
     db.collection('signups').where({
       nickName: nickName
-    }).orderBy('signupTime', 'desc').limit(1).get({
+    }).orderBy('signupTime', 'desc').get({
       success: function(res) {
-        if (res.data.length > 0 && res.data[0].avatarUrl) {
-          if (callback) callback(res.data[0].avatarUrl)
-        } else {
-          // 如果signups里没有，尝试从users集合通过nickName查
-          db.collection('users').where({
-            nickName: nickName
-          }).limit(1).get({
-            success: function(userRes) {
-              if (userRes.data.length > 0 && userRes.data[0].avatarUrl) {
-                if (callback) callback(userRes.data[0].avatarUrl)
-              } else {
-                if (callback) callback('')
-              }
-            },
-            fail: function() {
+        const records = res.data || []
+        // 找第一条有头像的记录
+        const recordWithAvatar = records.find(r => r.avatarUrl || r.avatar)
+        if (recordWithAvatar) {
+          if (callback) callback(recordWithAvatar.avatarUrl || recordWithAvatar.avatar)
+          return
+        }
+        
+        // signups里没有头像，尝试从users集合查（先按nickName，再按userId/openId）
+        db.collection('users').where({
+          nickName: nickName
+        }).get({
+          success: function(userRes) {
+            const users = userRes.data || []
+            const userWithAvatar = users.find(u => u.avatarUrl || u.avatar)
+            if (userWithAvatar) {
+              if (callback) callback(userWithAvatar.avatarUrl || userWithAvatar.avatar)
+              return
+            }
+            
+            // 按nickName查不到，尝试从signups记录获取userId，然后查users的openId字段
+            const recordWithUserId = records.find(r => r.userId || r._openid)
+            if (recordWithUserId) {
+              const userId = recordWithUserId.userId || recordWithUserId._openid
+              db.collection('users').where({
+                openId: userId
+              }).get({
+                success: function(userRes) {
+                  if (userRes.data.length > 0 && (userRes.data[0].avatarUrl || userRes.data[0].avatar)) {
+                    if (callback) callback(userRes.data[0].avatarUrl || userRes.data[0].avatar)
+                  } else {
+                    if (callback) callback('')
+                  }
+                },
+                fail: function() {
+                  if (callback) callback('')
+                }
+              })
+            } else {
               if (callback) callback('')
             }
-          })
-        }
+          },
+          fail: function() {
+            if (callback) callback('')
+          }
+        })
       },
       fail: function() {
-        if (callback) callback('')
+        // signups查询失败，直接查users
+        db.collection('users').where({
+          nickName: nickName
+        }).get({
+          success: function(userRes) {
+            const users = userRes.data || []
+            const userWithAvatar = users.find(u => u.avatarUrl || u.avatar)
+            if (userWithAvatar) {
+              if (callback) callback(userWithAvatar.avatarUrl || userWithAvatar.avatar)
+            } else {
+              if (callback) callback('')
+            }
+          },
+          fail: function() {
+            if (callback) callback('')
+          }
+        })
       }
     })
   },
@@ -266,20 +310,29 @@ Page({
           that.loadRemarkName()
           that.loadAllStats(newUserId)
         } else {
-          if (!userInfo || !userInfo.nickName || userInfo.nickName === '未知用户') {
-            that.setData({
-              userInfo: {
-                nickName: '未知用户',
-                avatarUrl: '',
-                wechatName: '默认昵称',
-                registerTime: '',
-                position: '',
-                jerseyNumber: ''
-              }
-            })
-          }
-          that.loadRemarkName()
-          that.loadAllStats(nickName)
+          // users集合中没有匹配nickName的记录，尝试从signups获取头像
+          that.fetchAvatarFromSignups(nickName, function(fetchedAvatar) {
+            if (fetchedAvatar) {
+              that.setData({
+                'userInfo.avatarUrl': fetchedAvatar
+              })
+            }
+            if (!userInfo || !userInfo.nickName || userInfo.nickName === '未知用户') {
+              that.setData({
+                userInfo: {
+                  nickName: '未知用户',
+                  avatarUrl: fetchedAvatar || '',
+                  wechatName: '默认昵称',
+                  registerTime: '',
+                  position: '',
+                  jerseyNumber: ''
+                }
+              })
+            }
+            that.loadRemarkName()
+            that.loadAllStats(nickName)
+          })
+          return
         }
         if (callback) callback()
       },
@@ -539,33 +592,8 @@ Page({
   },
 
   recordVisit: function(targetUserId) {
-    const that = this
-    const { myInfo, userInfo } = this.data
-    const userId = targetUserId || that.data.userId
-    
-    if (!myInfo || !myInfo.openId) return
-
-    const targetNickName = userInfo ? userInfo.nickName : ''
-
-    db.collection('visitors').add({
-      data: {
-        fromOpenId: myInfo.openId,
-        toUserId: userId,
-        toNickName: targetNickName,
-        visitTime: new Date()
-      },
-      success: function() {
-        db.collection('visitors').where(db.command.or([
-          { toUserId: userId },
-          { toNickName: userId },
-          { toNickName: targetNickName }
-        ])).count({
-          success: function(res) {
-            that.setData({ visitorCount: res.total })
-          }
-        })
-      }
-    })
+    // 访客功能已关闭，直接清零
+    this.setData({ visitorCount: 0 })
   },
 
   toggleLike: function() {
@@ -813,11 +841,22 @@ Page({
 
     const targetNickName = userInfo ? userInfo.nickName : ''
 
-    db.collection('impressions').where(db.command.or([
-      { toUserId: userId },
-      { toNickName: userId },
-      { toNickName: targetNickName }
-    ])).get({
+    // 如果没有任何用户标识，直接清空印象数据，避免查全表
+    if (!userId && !targetNickName) {
+      that.setData({ impressions: [], myImpression: '', selectedImpressions: [], selectedMap: {}, customImpression: '' })
+      return
+    }
+
+    const conditions = []
+    if (userId) {
+      conditions.push({ toUserId: userId })
+      conditions.push({ toNickName: userId })
+    }
+    if (targetNickName) {
+      conditions.push({ toNickName: targetNickName })
+    }
+
+    db.collection('impressions').where(db.command.or(conditions)).get({
       success: function(res) {
         const impressions = (res.data || []).map(item => ({
           ...item,

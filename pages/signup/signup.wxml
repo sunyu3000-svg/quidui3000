@@ -3,7 +3,7 @@
     <view class="header-title">活动报名</view>
     <view class="header-subtitle">选择一个活动参与</view>
     <view class="header-actions">
-      <button wx:if="{{isAdmin}}" class="action-btn" bindtap="showSearchModal">📋 历史活动</button>
+      <button wx:if="{{isAdmin}}" class="action-btn" bindtap="showSearchModal">历史活动</button>
       <button wx:if="{{isAdmin}}" class="action-btn primary" bindtap="showAddActivityModal">+ 发布活动</button>
     </view>
   </view>
@@ -45,15 +45,13 @@
       
       <view class="activity-info">
         <view class="info-item">
-          <text class="info-icon date-icon">📅</text>
+          <text class="info-icon date-icon">·</text>
           <text class="info-text">{{item.date || '暂无日期'}}</text>
         </view>
         <view class="info-item">
-          <text class="info-icon time-icon">🕐</text>
           <text class="info-text">{{item.time}}</text>
         </view>
         <view class="info-item">
-          <text class="info-icon location-icon">📍</text>
           <text class="info-text">{{item.location}}</text>
         </view>
       </view>
@@ -70,18 +68,16 @@
 
       <view class="activity-footer">
         <text class="activity-desc">{{item.description || '暂无描述'}}</text>
-        <view class="arrow">→</view>
+        <view class="arrow">></view>
       </view>
     </view>
 
     <view class="empty-state" wx:if="{{activities.length === 0}}">
-      <text class="empty-icon">📋</text>
       <text class="empty-text">暂无活动</text>
     </view>
   </view>
 
   <view class="loading" wx:if="{{loading}}">
-    <text class="loading-icon">⏳</text>
     <text class="loading-text">加载中...</text>
   </view>
 
@@ -102,13 +98,13 @@
       <view class="form-item">
           <text class="form-label">活动时间</text>
           <view class="picker-input" bindtap="openCalendar">
-            <text wx:if="{{newActivity.date}}">📅 {{newActivity.date}}</text>
-            <text wx:else class="placeholder">📅 点击选择日期</text>
+            <text wx:if="{{newActivity.date}}">{{newActivity.date}}</text>
+            <text wx:else class="placeholder">点击选择日期</text>
           </view>
           <picker mode="time" value="{{newActivity.timeValue}}" bindchange="onTimeChange">
             <view class="picker-input">
-              <text wx:if="{{newActivity.timeValue}}">🕐 {{newActivity.timeValue}}</text>
-              <text wx:else class="placeholder">🕐 点击选择时间</text>
+              <text wx:if="{{newActivity.timeValue}}">{{newActivity.timeValue}}</text>
+              <text wx:else class="placeholder">点击选择时间</text>
             </view>
           </picker>
         </view>
@@ -116,8 +112,8 @@
       <view class="form-item">
         <text class="form-label">活动地点</text>
         <view class="picker-input" bindtap="chooseLocation">
-          <text wx:if="{{newActivity.location}}">📍 {{newActivity.location}}</text>
-          <text wx:else class="placeholder">📍 点击选择地点</text>
+          <text wx:if="{{newActivity.location}}">{{newActivity.location}}</text>
+          <text wx:else class="placeholder">点击选择地点</text>
         </view>
         <view wx:if="{{showLocationHistory}}" class="dropdown-list">
           <view 
@@ -137,7 +133,7 @@
         <text class="form-label">活动类型</text>
         <input 
           class="form-input" 
-          placeholder="⚽ 输入活动类型" 
+          placeholder="输入活动类型" 
           value="{{newActivity.activityType}}" 
           bindinput="onActivityTypeInput" 
           bindfocus="onActivityTypeFocus"
@@ -160,7 +156,7 @@
         <text class="form-label">收费标准</text>
         <input 
           class="form-input" 
-          placeholder="💰 输入收费标准" 
+          placeholder="输入收费标准" 
           value="{{newActivity.fee}}" 
           bindinput="onActivityFeeInput" 
           bindfocus="onFeeFocus"
@@ -190,7 +186,7 @@
           <button class="player-option" wx:for="{{playerOptions}}" wx:key="value" bindtap="selectPlayers" data-value="{{item.value}}">{{item.label}}</button>
         </view>
         <view wx:if="{{showPlayerHistory}}" class="history-list">
-          <text class="history-subtitle">👥 历史人数</text>
+          <text class="history-subtitle">历史人数</text>
           <view class="history-item" wx:for="{{historyPlayers}}" wx:key="value" bindtap="selectPlayers" data-value="{{item.value}}">
             <text>{{item.value}}人</text>
             <text class="history-count">使用{{item.count}}次</text>

@@ -1,11 +1,11 @@
 .signup-container {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: #f7f7f8;
 }
 
 .header {
-  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-  padding: 60rpx 40rpx 80rpx;
+  background: #2c3e50;
+  padding: 50rpx 32rpx 70rpx;
   color: white;
 }
 
@@ -28,11 +28,11 @@
 }
 
 .action-btn {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
   color: white;
-  border: 1rpx solid rgba(255, 255, 255, 0.3);
-  border-radius: 32rpx;
-  padding: 16rpx 32rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  border-radius: 8rpx;
+  padding: 14rpx 28rpx;
   font-size: 26rpx;
   font-weight: 500;
 }
@@ -41,7 +41,7 @@
   background: white;
   color: #dc3545;
   border: none;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 /* 查询弹窗样式 */
@@ -139,10 +139,10 @@
 
 .activity-card {
   background: white;
-  border-radius: 20rpx;
-  padding: 32rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border-radius: 12rpx;
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 
 .activity-header {
@@ -184,11 +184,6 @@
   color: #999;
 }
 
-.activity-card.ended .info-icon.time-icon,
-.activity-card.ended .info-icon.location-icon {
-  filter: grayscale(100%);
-}
-
 .activity-info {
   display: flex;
   gap: 40rpx;
@@ -202,7 +197,8 @@
 }
 
 .info-icon {
-  font-size: 28rpx;
+  font-size: 22rpx;
+  color: #ccc;
 }
 
 .info-text {
@@ -223,9 +219,8 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #dc3545 0%, #e74c3c 100%);
+  background: #dc3545;
   border-radius: 6rpx;
-  transition: width 0.3s ease;
 }
 
 .progress-text {
@@ -250,21 +245,15 @@
 }
 
 .arrow {
-  font-size: 32rpx;
-  color: #dc3545;
+  font-size: 28rpx;
+  color: #ccc;
 }
 
 .empty-state {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 100rpx 0;
-}
-
-.empty-icon {
-  font-size: 80rpx;
-  margin-bottom: 24rpx;
 }
 
 .empty-text {
@@ -274,15 +263,9 @@
 
 .loading {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 100rpx 0;
-}
-
-.loading-icon {
-  font-size: 48rpx;
-  margin-bottom: 20rpx;
 }
 
 .loading-text {
@@ -323,17 +306,17 @@
   width: 90%;
   max-height: 85vh;
   background: white;
-  border-radius: 24rpx;
-  padding: 40rpx;
+  border-radius: 16rpx;
+  padding: 36rpx;
   overflow-y: auto;
 }
 
 .modal-title {
-  font-size: 36rpx;
-  font-weight: bold;
+  font-size: 34rpx;
+  font-weight: 700;
   text-align: center;
-  margin-bottom: 40rpx;
-  color: #333;
+  margin-bottom: 32rpx;
+  color: #2c3e50;
 }
 
 .form-item {
@@ -494,9 +477,10 @@
 
 .modal-btn {
   flex: 1;
-  height: 88rpx;
-  border-radius: 44rpx;
+  height: 84rpx;
+  border-radius: 12rpx;
   font-size: 30rpx;
+  font-weight: 600;
 }
 
 .modal-btn.cancel {

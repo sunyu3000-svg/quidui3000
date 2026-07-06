@@ -3,7 +3,7 @@
   <view class="user-header">
     <view class="user-avatar-section">
       <image 
-        wx:if="{{userInfo.avatarUrl}}" 
+        wx:if="{{userInfo.avatarUrl && userInfo.avatarUrl.trim()}}" 
         class="user-avatar" 
         src="{{userInfo.avatarUrl}}" 
         mode="aspectFill"
@@ -12,7 +12,7 @@
         <text class="avatar-text">{{userInfo.nickName ? userInfo.nickName.charAt(0) : '?'}}</text>
       </view>
       <button class="share-btn" open-type="share">
-        <text class="share-icon">💬</text>
+        <text class="share-text">分享</text>
       </button>
     </view>
     
@@ -74,11 +74,9 @@
   <!-- 操作按钮 -->
   <view class="action-section">
     <view class="action-btn like-btn {{isLiked ? 'liked' : ''}}" bindtap="toggleLike">
-      <view class="heart-icon">{{isLiked ? '❤️' : '🤍'}}</view>
       <text class="btn-text">{{isLiked ? '已喜欢' : '喜欢'}}</text>
     </view>
     <view class="action-btn impression-btn" bindtap="showImpressionModal">
-      <view class="heart-icon">💬</view>
       <text class="btn-text">{{myImpression ? '修改印象' : '添加印象'}}</text>
     </view>
   </view>
@@ -89,12 +87,12 @@
     <view class="common-list">
       <view class="common-item">
         <text class="common-text">今年TA和我共同踢球</text>
-        <view class="common-badge orange">{{commonActivities.thisYear}}</view>
+        <view class="common-badge">{{commonActivities.thisYear}}</view>
         <text class="common-unit">次</text>
       </view>
       <view class="common-item">
         <text class="common-text">累计TA和我共同踢球</text>
-        <view class="common-badge red">{{commonActivities.total}}</view>
+        <view class="common-badge">{{commonActivities.total}}</view>
         <text class="common-unit">次</text>
       </view>
     </view>
@@ -112,7 +110,7 @@
           <text class="impression-author">{{item.fromNickName}}</text>
           <text class="impression-time">{{item.formattedTime}}</text>
         </view>
-        <view wx:if="{{item.fromNickName === myInfo.nickName}}" class="delete-btn" bindtap="deleteImpression" data-id="{{item.id}}">
+        <view wx:if="{{item.fromNickName === myInfo.nickName}}" class="delete-btn" bindtap="deleteImpression" data-id="{{item._id}}">
           <text>删除</text>
         </view>
       </view>

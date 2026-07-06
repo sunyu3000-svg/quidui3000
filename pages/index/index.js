@@ -201,23 +201,47 @@ Page({
         const weekEnd = formatDateLocal(new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000))
         const today = formatDateLocal(now)
         
-        const normalizeDate = function(dateStr) {
-          if (!dateStr) return null
-          if (typeof dateStr === 'string') {
-            const parts = dateStr.split('-')
-            if (parts.length === 3) {
-              return `${parts[0]}-${String(parseInt(parts[1])).padStart(2, '0')}-${String(parseInt(parts[2])).padStart(2, '0')}`
-            }
+        // 通用日期归一化：支持多种常见格式，兜底用 new Date
+        const normalizeDate = function(raw) {
+          if (!raw && raw !== 0) return null
+          
+          if (typeof raw === 'string') {
+            const str = raw.trim()
+            if (!str) return null
+            
+            // 匹配 YYYY-MM-DD
+            const m1 = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+            if (m1) return `${m1[1]}-${String(m1[2]).padStart(2,'0')}-${String(m1[3]).padStart(2,'0')}`
+            
+            // 匹配 YYYY/MM/DD
+            const m2 = str.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/)
+            if (m2) return `${m2[1]}-${String(m2[2]).padStart(2,'0')}-${String(m2[3]).padStart(2,'0')}`
+            
+            // 匹配 YYYY.MM.DD
+            const m3 = str.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/)
+            if (m3) return `${m3[1]}-${String(m3[2]).padStart(2,'0')}-${String(m3[3]).padStart(2,'0')}`
+            
+            // 匹配 YYYY年MM月DD日
+            const m4 = str.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日?$/)
+            if (m4) return `${m4[1]}-${String(m4[2]).padStart(2,'0')}-${String(m4[3]).padStart(2,'0')}`
           }
-          return null
+          
+          // 兜底：Date 对象、时间戳、ISO 字符串等
+          const d = new Date(raw)
+          if (isNaN(d.getTime())) return null
+          const year = d.getFullYear()
+          const month = String(d.getMonth() + 1).padStart(2, '0')
+          const day = String(d.getDate()).padStart(2, '0')
+          return `${year}-${month}-${day}`
         }
         
         // 统计总活动数
         that.setData({ 'stats.totalActivities': allActivities.length })
         
         const weeklyActivities = allActivities.filter(item => {
-          if (!item.date) return false
-          const activityDate = normalizeDate(item.date)
+          const dateRaw = item.date || item.createTime || item._createTime
+          if (!dateRaw) return false
+          const activityDate = normalizeDate(dateRaw)
           if (!activityDate) return false
           return activityDate >= weekStart && activityDate <= weekEnd
         })
@@ -227,22 +251,35 @@ Page({
           'stats.weeklyActivity': weeklyActivities.length
         })
         
-        // 统计进行中的活动（status=active 且日期未过）
+        // 统计进行中的活动（status=active 或 status为空，且日期未过）
         const ongoingActivities = allActivities.filter(a => {
-          if (a.status !== 'active') return false
-          if (!a.date) return true  // 无日期视为进行中
-          const nd = normalizeDate(a.date)
-          if (!nd) return true
+          // status 为 'active' 或为空/undefined/null
+          if (a.status && a.status !== 'active') return false
+          const dateRaw = a.date || a.createTime || a._createTime
+          if (!dateRaw) return false
+          const nd = normalizeDate(dateRaw)
+          if (!nd) return false
           return nd >= today
         }).length
         that.setData({ 'stats.ongoingActivities': ongoingActivities })
         
         that.loadWeeklySignupCount(weeklyActivities)
         
-        // 并行加载其他数据
+        // 查询总注册用户数
+        db.collection('users').count({
+          success: function(res) {
+            that.setData({ 'stats.activeUsers': res.total || 0 })
+          },
+          fail: function() {
+            that.setData({ 'stats.activeUsers': 0 })
+          }
+        })
+        
+        // 删除诊断日志
+        // 并行加载其他数据（传入 allActivities 避免重复查询数据库）
         that.loadCurrentActivity(allActivities)
-        that.loadWeeklyTrendData()
-        that.loadMonthlyData()
+        that.loadWeeklyTrendData(allActivities)
+        that.loadMonthlyData(allActivities)
         that.loadActivityTypeData()
         that.loadTopPlayersFromDatabase()
         that.loadTotalFees()
@@ -263,11 +300,24 @@ Page({
   loadWeeklySignupCount: function(weeklyActivities) {
     const that = this
     if (!weeklyActivities || weeklyActivities.length === 0) {
-      that.setData({ 'stats.avgSignups': 0, 'stats.activeUsers': 0 })
+      that.setData({ 'stats.avgSignups': 0 })
       return
     }
     
-    // 获取本周活动的ID列表（同时包含 id 和 _id，因为报名记录可能使用任一ID保存）
+    // 先使用 activities 对象中的 signups 数据计算（兜底）
+    let totalSignups = 0
+    weeklyActivities.forEach(activity => {
+      if (activity.signups && Array.isArray(activity.signups)) {
+        totalSignups += activity.signups.length
+      } else if (activity.signupCount && typeof activity.signupCount === 'number') {
+        totalSignups += activity.signupCount
+      }
+    })
+    
+    const avgSignups = Math.round(totalSignups / weeklyActivities.length)
+    that.setData({ 'stats.avgSignups': avgSignups })
+    
+    // 再查询 signups 集合精确统计
     const activityIds = []
     const activityIdSet = new Set()
     weeklyActivities.forEach(a => {
@@ -281,93 +331,32 @@ Page({
       }
     })
     
-    const timer = setTimeout(() => {
-      // 查询超时，使用活动对象中的signups字段
-      let totalSignups = 0
-      const activeUsers = new Set()
-      weeklyActivities.forEach(activity => {
-        if (activity.signups && Array.isArray(activity.signups)) {
-          totalSignups += activity.signups.length
-          activity.signups.forEach(user => {
-            if (user.userId || user.nickName) {
-              activeUsers.add(user.userId || user.nickName)
-            }
+    if (activityIds.length > 0) {
+      const query = activityIds.length === 1
+        ? { activityId: activityIds[0] }
+        : { activityId: db.command.in(activityIds) }
+      
+      db.collection('signups').where(query).limit(500).get({
+        timeout: 5000,
+        success: function(res) {
+          const allSignups = res.data || []
+          let dbTotal = 0
+          
+          allSignups.forEach(signup => {
+            if (signup.status === 'pending' || signup.status === 'leave') return
+            dbTotal++
           })
+          
+          const avgSignups = Math.round(dbTotal / weeklyActivities.length)
+          that.setData({
+            'stats.avgSignups': avgSignups
+          })
+        },
+        fail: function() {
+          // 查询失败，保持 activities.signups 兜底值
         }
       })
-      const avgSignups = Number((totalSignups / weeklyActivities.length).toFixed(2))
-      that.setData({ 
-        'stats.avgSignups': avgSignups,
-        'stats.activeUsers': activeUsers.size
-      })
-    }, 5000)
-    
-    // 先查询所有报名记录，然后匹配本周活动
-    db.collection('signups').limit(500).get({
-      timeout: 5000,
-      success: function(res) {
-        clearTimeout(timer)
-        const allSignups = res.data || []
-        
-        const signupByActivity = new Map()
-        allSignups.forEach(signup => {
-          if (signup.status === 'pending' || signup.status === 'leave') return
-          
-          const actId = signup.activityId
-          if (!actId || actId === '') return
-          if (!signupByActivity.has(actId)) {
-            signupByActivity.set(actId, new Set())
-          }
-          signupByActivity.get(actId).add(signup.userId || signup.nickName || signup._id)
-        })
-        
-        let totalSignups = 0
-        const activeUsers = new Set()
-        
-        weeklyActivities.forEach(activity => {
-          const possibleIds = []
-          if (activity._id) possibleIds.push(activity._id)
-          if (activity.id && activity.id !== activity._id) possibleIds.push(activity.id)
-          
-          possibleIds.forEach(id => {
-            if (signupByActivity.has(id)) {
-              const users = signupByActivity.get(id)
-              totalSignups += users.size
-              users.forEach(userKey => {
-                activeUsers.add(userKey)
-              })
-            }
-          })
-        })
-        
-        const avgSignups = Math.round(totalSignups / weeklyActivities.length)
-        
-        that.setData({ 
-          'stats.avgSignups': avgSignups,
-          'stats.activeUsers': activeUsers.size
-        })
-      },
-      fail: function() {
-        clearTimeout(timer)
-        let totalSignups = 0
-        const activeUsers = new Set()
-        weeklyActivities.forEach(activity => {
-          if (activity.signups && Array.isArray(activity.signups)) {
-            totalSignups += activity.signups.length
-            activity.signups.forEach(user => {
-              if (user.userId || user.nickName) {
-                activeUsers.add(user.userId || user.nickName)
-              }
-            })
-          }
-        })
-        const avgSignups = Number((totalSignups / weeklyActivities.length).toFixed(2))
-        that.setData({ 
-          'stats.avgSignups': avgSignups,
-          'stats.activeUsers': activeUsers.size
-        })
-      }
-    })
+    }
   },
 
 // 加载活动类型数据（从数据库查询）
@@ -538,147 +527,157 @@ loadTopPlayersFromDatabase: function() {
   })
 },
 
-fetchPlayerAvatars: function(players) {
-  const that = this
-  if (!players || players.length === 0) return
-  
-  const playersWithMissingAvatar = players.filter(p => !p.avatarUrl)
-  if (playersWithMissingAvatar.length === 0) return
-  
-  const nickNames = playersWithMissingAvatar.map(p => p.nickName)
-  
-  const avatarMap = new Map()
-  
-  db.collection('users').where({
-    nickName: db.command.in(nickNames)
-  }).get({
-    timeout: 10000,
-    success: function(res) {
-      const users = res.data || []
-      users.forEach(u => {
-        if (u.nickName && u.avatarUrl) {
-          avatarMap.set(u.nickName, u.avatarUrl)
+  fetchPlayerAvatars: function(players) {
+    const that = this
+    if (!players || players.length === 0) return
+
+    const missingPlayers = players.filter(p => !(p.avatarUrl && p.avatarUrl.trim()))
+    if (missingPlayers.length === 0) return
+
+    const nickNames = missingPlayers.map(p => p.nickName)
+    const avatarMap = new Map()
+
+    // 步骤1：从 signups 获取头像和 openId
+    db.collection('signups').where({
+      nickName: db.command.in(nickNames)
+    }).limit(100).get({
+      success: function(signupRes) {
+        const signups = signupRes.data || []
+        const openIdMap = new Map() // nickName -> openId
+
+        signups.forEach(s => {
+          if (!s.nickName) return
+          if (s.avatarUrl && !avatarMap.has(s.nickName)) {
+            avatarMap.set(s.nickName, s.avatarUrl)
+          }
+          const openId = s.userId || s._openid
+          if (openId && !openIdMap.has(s.nickName)) {
+            openIdMap.set(s.nickName, openId)
+          }
+        })
+
+        // 步骤2：对还缺头像的，用 openId 查 users 集合
+        const stillMissing = missingPlayers.filter(p => !avatarMap.has(p.nickName))
+        if (stillMissing.length === 0) {
+          applyAvatars()
+          return
         }
-      })
-      
-      const stillMissing = playersWithMissingAvatar.filter(p => !avatarMap.has(p.nickName))
-      if (stillMissing.length > 0) {
-        const missingNames = stillMissing.map(p => p.nickName)
-        db.collection('signups').where({
-          nickName: db.command.in(missingNames)
-        }).limit(100).get({
-          timeout: 10000,
-          success: function(signupRes) {
-            const signups = signupRes.data || []
-            signups.forEach(s => {
-              if (s.nickName && s.avatarUrl && !avatarMap.has(s.nickName)) {
-                avatarMap.set(s.nickName, s.avatarUrl)
+
+        const openIds = []
+        stillMissing.forEach(p => {
+          const oid = openIdMap.get(p.nickName)
+          if (oid) openIds.push(oid)
+        })
+
+        if (openIds.length === 0) {
+          applyAvatars()
+          return
+        }
+
+        db.collection('users').where({
+          openId: db.command.in(openIds)
+        }).get({
+          success: function(userRes) {
+            const users = userRes.data || []
+            const userAvatarMap = new Map() // openId -> avatarUrl
+            users.forEach(u => {
+              if (u.openId && u.avatarUrl) {
+                userAvatarMap.set(u.openId, u.avatarUrl)
               }
             })
-            
-            const updatedPlayers = players.map(p => {
-              if (!p.avatarUrl && avatarMap.has(p.nickName)) {
-                p.avatarUrl = avatarMap.get(p.nickName)
+            // 映射回 nickName
+            stillMissing.forEach(p => {
+              const oid = openIdMap.get(p.nickName)
+              if (oid && userAvatarMap.has(oid) && !avatarMap.has(p.nickName)) {
+                avatarMap.set(p.nickName, userAvatarMap.get(oid))
               }
-              return p
             })
-            
-            that.setData({ topPlayers: updatedPlayers })
           },
-          fail: function() {
-            const updatedPlayers = players.map(p => {
-              if (!p.avatarUrl && avatarMap.has(p.nickName)) {
-                p.avatarUrl = avatarMap.get(p.nickName)
-              }
-              return p
-            })
-            that.setData({ topPlayers: updatedPlayers })
-          }
+          complete: applyAvatars
         })
-      } else {
-        const updatedPlayers = players.map(p => {
-          if (!p.avatarUrl && avatarMap.has(p.nickName)) {
-            p.avatarUrl = avatarMap.get(p.nickName)
-          }
-          return p
-        })
-        that.setData({ topPlayers: updatedPlayers })
-      }
-    },
-    fail: function() {
-      db.collection('signups').where({
-        nickName: db.command.in(nickNames)
-      }).limit(100).get({
-        timeout: 10000,
-        success: function(res) {
-          const signups = res.data || []
-          signups.forEach(s => {
-            if (s.nickName && s.avatarUrl) {
-              avatarMap.set(s.nickName, s.avatarUrl)
-            }
-          })
-          
+
+        function applyAvatars() {
           const updatedPlayers = players.map(p => {
-            if (!p.avatarUrl && avatarMap.has(p.nickName)) {
+            if (!(p.avatarUrl && p.avatarUrl.trim()) && avatarMap.has(p.nickName)) {
               p.avatarUrl = avatarMap.get(p.nickName)
             }
             return p
           })
-          
           that.setData({ topPlayers: updatedPlayers })
         }
-      })
-    }
-  })
-},
+      },
+      fail: function() {
+        // signups 失败，兜底查 users 的 nickName
+        db.collection('users').where({
+          nickName: db.command.in(nickNames)
+        }).get({
+          success: function(userRes) {
+            const users = userRes.data || []
+            users.forEach(u => {
+              if (u.nickName && u.avatarUrl) {
+                avatarMap.set(u.nickName, u.avatarUrl)
+              }
+            })
+            const updatedPlayers = players.map(p => {
+              if (!(p.avatarUrl && p.avatarUrl.trim()) && avatarMap.has(p.nickName)) {
+                p.avatarUrl = avatarMap.get(p.nickName)
+              }
+              return p
+            })
+            that.setData({ topPlayers: updatedPlayers })
+          }
+        })
+      }
+    })
+  },
 
 // 加载月度活动数据（统计所有活动的月度分布）
-loadMonthlyData: function() {
+  loadMonthlyData: function(allActivities) {
   const that = this
   
-  db.collection('activities').limit(500).get({
-    timeout: 15000,
-    success: function(res) {
-      const activities = res.data || []
+  const monthLabels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+  const monthlyData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  
+  const activities = allActivities || []
+  let noDateCount = 0
+  
+  // 通用日期归一化：支持多种常见格式，兜底用 new Date
+  const normalizeDate = function(raw) {
+    if (!raw && raw !== 0) return null
+    
+    if (typeof raw === 'string') {
+      const str = raw.trim()
+      if (!str) return null
       
-      const monthLabels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
-      const monthlyData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      const m1 = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+      if (m1) return { year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) }
       
-      // 日期标准化函数
-      const normalizeDate = function(dateStr) {
-        if (!dateStr) return null
-        if (typeof dateStr === 'string') {
-          const parts = dateStr.split('-')
-          if (parts.length >= 3) {
-            return {
-              year: parseInt(parts[0]),
-              month: parseInt(parts[1]),
-              day: parseInt(parts[2])
-            }
-          }
-        }
-        return null
-      }
+      const m2 = str.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/)
+      if (m2) return { year: parseInt(m2[1]), month: parseInt(m2[2]), day: parseInt(m2[3]) }
       
-      activities.forEach(activity => {
-        const parsed = normalizeDate(activity.date)
-        if (parsed && parsed.month >= 1 && parsed.month <= 12) {
-          monthlyData[parsed.month - 1]++
-        }
-      })
+      const m3 = str.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/)
+      if (m3) return { year: parseInt(m3[1]), month: parseInt(m3[2]), day: parseInt(m3[3]) }
       
-      that.setData({
-        'monthlyData.labels': monthLabels,
-        'monthlyData.data': monthlyData
-      })
-    },
-    fail: function() {
-      const monthLabels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
-      that.setData({
-        'monthlyData.labels': monthLabels,
-        'monthlyData.data': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-      })
+      const m4 = str.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日?$/)
+      if (m4) return { year: parseInt(m4[1]), month: parseInt(m4[2]), day: parseInt(m4[3]) }
     }
+    
+    const d = new Date(raw)
+    if (isNaN(d.getTime())) return null
+    return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() }
+  }
+  
+  activities.forEach(activity => {
+    const dateRaw = activity.date || activity.createTime || activity._createTime
+    const parsed = normalizeDate(dateRaw)
+    if (parsed && parsed.month >= 1 && parsed.month <= 12) {
+      monthlyData[parsed.month - 1]++
+    }
+  })
+  
+  that.setData({
+    'monthlyData.labels': monthLabels,
+    'monthlyData.data': monthlyData
   })
 },
 
@@ -858,11 +857,11 @@ loadMonthlyData: function() {
     that.calculateWeeklyAverageSignups(weeklyActivities)
     
     // 统计本周每天的报名数据（趋势数据）
-    that.loadWeeklyTrendData()
+    that.loadWeeklyTrendData(activities)
   },
   
   // 加载本周趋势数据（每天的报名人数）
-  loadWeeklyTrendData: function() {
+  loadWeeklyTrendData: function(allActivities) {
     const that = this
     
     // 获取本周每天的日期
@@ -888,51 +887,104 @@ loadMonthlyData: function() {
       weekDays.push(formatDateLocal(date))
     }
     
-    // console.log('=== loadWeeklyTrendData ===')
-    // console.log('当前日期:', formatDateLocal(now))
-    // console.log('当前星期:', dayOfWeek)
-    // console.log('本周一:', formatDateLocal(monday))
-    // console.log('本周日期:', weekDays.map((d, i) => `${i}:${d}`).join(', '))
+    // 通用日期归一化：支持多种常见格式，兜底用 new Date
+    const normalizeDate = function(raw) {
+      if (!raw && raw !== 0) return null
+      
+      if (typeof raw === 'string') {
+        const str = raw.trim()
+        if (!str) return null
+        
+        const m1 = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+        if (m1) return `${m1[1]}-${String(m1[2]).padStart(2,'0')}-${String(m1[3]).padStart(2,'0')}`
+        
+        const m2 = str.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/)
+        if (m2) return `${m2[1]}-${String(m2[2]).padStart(2,'0')}-${String(m2[3]).padStart(2,'0')}`
+        
+        const m3 = str.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/)
+        if (m3) return `${m3[1]}-${String(m3[2]).padStart(2,'0')}-${String(m3[3]).padStart(2,'0')}`
+        
+        const m4 = str.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日?$/)
+        if (m4) return `${m4[1]}-${String(m4[2]).padStart(2,'0')}-${String(m4[3]).padStart(2,'0')}`
+      }
+      
+      const d = new Date(raw)
+      if (isNaN(d.getTime())) return null
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
     
-    // 查询所有活动，不做日期限制，确保历史活动也能被统计到本周趋势
-    db.collection('activities').limit(500).get({
-      success: function(activityRes) {
-        const activities = activityRes.data || []
-        
-        // 日期标准化函数（确保 YYYY-MM-DD 格式一致，处理无前导零的情况）
-        const normalizeDate = function(dateStr) {
-          if (!dateStr) return null
-          if (typeof dateStr === 'string') {
-            const parts = dateStr.split('-')
-            if (parts.length === 3) {
-              return `${parts[0]}-${String(parseInt(parts[1])).padStart(2, '0')}-${String(parseInt(parts[2])).padStart(2, '0')}`
-            }
-          }
-          return null
-        }
-        
-        // 按日期统计活动数量（初始化为0）
-        const dailyActivityCount = [0, 0, 0, 0, 0, 0, 0]
-        
-        // 遍历所有活动，统计本周每天的活动数
-        activities.forEach(activity => {
-          const normalizedDate = normalizeDate(activity.date)
-          if (!normalizedDate) return  // 无日期的活动跳过
-          
-          const dayIndex = weekDays.indexOf(normalizedDate)
+    // 按日期统计报名人数（初始化为0）
+    const dailySignupCount = [0, 0, 0, 0, 0, 0, 0]
+    const activities = allActivities || []
+    
+    // 第一步：从 allActivities 的 signupCount 字段统计（兼容字符串）
+    activities.forEach(activity => {
+      const normalizedDate = normalizeDate(activity.date)
+      if (!normalizedDate) return
+      const dayIndex = weekDays.indexOf(normalizedDate)
+      if (dayIndex < 0 || dayIndex >= 7) return
+      
+      let count = 0
+      if (activity.signups && Array.isArray(activity.signups)) {
+        count = activity.signups.length
+      } else if (activity.signupCount != null) {
+        count = parseInt(activity.signupCount) || 0
+      }
+      dailySignupCount[dayIndex] += count
+    })
+    
+    // 第二步：获取本周活动的 ID 列表，用 activityId 精确查询 signups 集合
+    const activityIds = []
+    const activityIdSet = new Set()
+    const idToDate = new Map()
+    
+    activities.forEach(a => {
+      const nd = normalizeDate(a.date)
+      if (!nd || weekDays.indexOf(nd) < 0) return
+      if (a._id && !activityIdSet.has(a._id)) {
+        activityIds.push(a._id)
+        activityIdSet.add(a._id)
+        idToDate.set(a._id, nd)
+      }
+      if (a.id && a.id !== a._id && !activityIdSet.has(a.id)) {
+        activityIds.push(a.id)
+        activityIdSet.add(a.id)
+        idToDate.set(a.id, nd)
+      }
+    })
+    
+    if (activityIds.length === 0) {
+      // 没有本周活动，直接显示已有的数据
+      that.setData({ 'chartData.data': dailySignupCount })
+      return
+    }
+    
+    // 用 activityId 精确查询 signups 集合，然后通过 activityId->date 映射累加柱状图
+    const query = activityIds.length === 1
+      ? { activityId: activityIds[0] }
+      : { activityId: db.command.in(activityIds) }
+    
+    db.collection('signups').where(query).limit(500).get({
+      timeout: 5000,
+      success: function(res) {
+        const signups = res.data || []
+        signups.forEach(signup => {
+          if (signup.status === 'pending' || signup.status === 'leave') return
+          const date = idToDate.get(signup.activityId)
+          if (!date) return
+          const dayIndex = weekDays.indexOf(date)
           if (dayIndex >= 0 && dayIndex < 7) {
-            dailyActivityCount[dayIndex]++
+            dailySignupCount[dayIndex]++
           }
         })
-        
-        that.setData({
-          'chartData.data': dailyActivityCount
-        })
+        that.setData({ 'chartData.data': dailySignupCount })
       },
       fail: function() {
-        that.setData({
-          'chartData.data': [0, 0, 0, 0, 0, 0, 0]
-        })
+        // 查询失败，使用 activities 集合中的数据
+        that.setData({ 'chartData.data': dailySignupCount })
       }
     })
   },
@@ -1298,5 +1350,13 @@ loadMonthlyData: function() {
     wx.navigateTo({
       url: url
     })
+  },
+
+  // 分享功能：让用户可以通过微信分享小程序给好友
+  onShareAppMessage: function() {
+    return {
+      title: '天涯球队管家 - 一起踢球，快乐足球',
+      path: '/pages/index/index'
+    }
   }
 })

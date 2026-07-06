@@ -337,19 +337,13 @@ Page({
   },
   
   onChooseAvatar: function(e) {
-    // console.log('=== onChooseAvatar 选择头像 ===')
-    
     const that = this
     
     // 检查是否有错误信息（用户取消选择）
     if (e.detail && e.detail.errMsg) {
-      // 用户取消选择头像
       if (e.detail.errMsg.includes('cancel')) {
-        // console.log('ℹ️ 用户取消选择头像')
         return
       }
-      // 其他错误
-      // console.log('❌ 选择头像失败:', e.detail.errMsg)
       wx.showToast({
         title: '选择头像失败',
         icon: 'none'
@@ -357,31 +351,122 @@ Page({
       return
     }
     
-    // 检查是否有头像URL
     if (e.detail && e.detail.avatarUrl) {
-      // console.log('✅ 选择头像成功:', e.detail.avatarUrl)
+      const tempFilePath = e.detail.avatarUrl
+      const cloudPath = `avatars/${Date.now()}.png`
       
-      // 更新用户信息
-      const updatedUserInfo = {
-        ...that.data.userInfo,
-        avatarUrl: e.detail.avatarUrl
-      }
+      wx.showLoading({ title: '上传头像中...' })
       
-      that.setData({
-        userInfo: updatedUserInfo
-      })
-      
-      wx.setStorage({
-        key: 'userInfo',
-        data: updatedUserInfo
-      })
-      
-      wx.showToast({
-        title: '头像更新成功',
-        icon: 'success'
+      // 上传到云存储
+      wx.cloud.uploadFile({
+        cloudPath: cloudPath,
+        filePath: tempFilePath,
+        success: function(uploadRes) {
+          const fileID = uploadRes.fileID
+          
+          const updatedUserInfo = {
+            ...that.data.userInfo,
+            avatarUrl: fileID
+          }
+          
+          that.setData({
+            userInfo: updatedUserInfo
+          })
+          
+          wx.setStorage({
+            key: 'userInfo',
+            data: updatedUserInfo
+          })
+          
+          // 保存到数据库
+          wx.cloud.callFunction({
+            name: 'getOpenId',
+            success: function(res) {
+              const openId = res.result.openid
+              db.collection('users').where({
+                openId: openId
+              }).get({
+                success: function(queryRes) {
+                  if (queryRes.data.length > 0) {
+                    db.collection('users').doc(queryRes.data[0]._id).update({
+                      data: {
+                        avatarUrl: fileID,
+                        nickName: that.data.userInfo && that.data.userInfo.nickName ? that.data.userInfo.nickName : '',
+                        updateTime: db.serverDate()
+                      },
+                      success: function() {
+                        wx.hideLoading()
+                        wx.showToast({
+                          title: '头像更新成功',
+                          icon: 'success'
+                        })
+                      },
+                      fail: function() {
+                        wx.hideLoading()
+                        wx.showToast({
+                          title: '头像更新成功',
+                          icon: 'success'
+                        })
+                      }
+                    })
+                  } else {
+                    // 没有记录，创建一条
+                    db.collection('users').add({
+                      data: {
+                        openId: openId,
+                        nickName: that.data.userInfo && that.data.userInfo.nickName ? that.data.userInfo.nickName : '',
+                        avatarUrl: fileID,
+                        createTime: db.serverDate(),
+                        updateTime: db.serverDate()
+                      },
+                      success: function() {
+                        wx.hideLoading()
+                        wx.showToast({
+                          title: '头像更新成功',
+                          icon: 'success'
+                        })
+                      },
+                      fail: function() {
+                        wx.hideLoading()
+                        wx.showToast({
+                          title: '头像更新成功',
+                          icon: 'success'
+                        })
+                      }
+                    })
+                  }
+                },
+                fail: function() {
+                  wx.hideLoading()
+                  wx.showToast({
+                    title: '头像更新成功',
+                    icon: 'success'
+                  })
+                }
+              })
+            },
+            fail: function() {
+              wx.hideLoading()
+              wx.showToast({
+                title: '头像更新成功',
+                icon: 'success'
+              })
+            }
+          })
+        },
+        fail: function() {
+          wx.hideLoading()
+          wx.showToast({
+            title: '上传失败',
+            icon: 'none'
+          })
+        }
       })
     } else {
-      // console.log('❌ 选择头像失败: 未获取到头像信息')
+      wx.showToast({
+        title: '未获取到头像',
+        icon: 'none'
+      })
     }
   },
   
@@ -852,6 +937,7 @@ Page({
       return
     }
 
+    const that = this
     const adminId = e.currentTarget.dataset.id
     const nickName = e.currentTarget.dataset.nickname
 
@@ -866,13 +952,16 @@ Page({
                 title: '删除成功',
                 icon: 'success'
               })
+              that.loadAdmins()
             },
             fail: function(err) {
-              // console.log('delete admin error:', err)
+              console.log('delete admin error:', err)
               wx.showToast({
                 title: '删除失败',
                 icon: 'none'
               })
+              // 即使删除失败也刷新列表，防止状态不一致
+              that.loadAdmins()
             }
           })
         }

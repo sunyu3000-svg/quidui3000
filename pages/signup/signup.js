@@ -243,7 +243,9 @@ Page({
       // 如果指定了年月，查询该月的活动
       const [year, month] = currentFilter.split('-').map(Number)
       const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-      const endDate = new Date(year, month, 0).toISOString().split('T')[0]
+      // 使用本地日期计算月末，避免 toISOString 时区偏移导致月末日期错误
+      const endDateObj = new Date(year, month, 0)
+      const endDate = `${endDateObj.getFullYear()}-${String(endDateObj.getMonth() + 1).padStart(2, '0')}-${String(endDateObj.getDate()).padStart(2, '0')}`
       query = query.where({
         date: db.command.gte(startDate).and(db.command.lte(endDate))
       })
@@ -253,7 +255,9 @@ Page({
       const year = now.getFullYear()
       const month = now.getMonth() + 1
       const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-      const endDate = new Date(year, month, 0).toISOString().split('T')[0]
+      // 使用本地日期计算月末，避免 toISOString 时区偏移导致月末日期错误
+      const endDateObj = new Date(year, month, 0)
+      const endDate = `${endDateObj.getFullYear()}-${String(endDateObj.getMonth() + 1).padStart(2, '0')}-${String(endDateObj.getDate()).padStart(2, '0')}`
       query = query.where({
         date: db.command.gte(startDate).and(db.command.lte(endDate))
       })
@@ -346,46 +350,52 @@ Page({
     const that = this
     const activities = this.data.activities
     
-    // 先查询所有报名记录，然后在客户端匹配活动
-    db.collection('signups').limit(500).get({
+    if (!activities || activities.length === 0) return
+    
+    // 收集所有活动的ID（同时收集 _id 和 id，兼容不同存储方式）
+    const allIds = new Set()
+    activities.forEach(activity => {
+      if (activity._id) allIds.add(activity._id)
+      if (activity.id && activity.id !== activity._id) allIds.add(activity.id)
+    })
+    
+    const ids = [...allIds]
+    if (ids.length === 0) return
+    
+    // 精确查询：只查这些活动ID的报名记录，排除待定和请假
+    db.collection('signups').where({
+      activityId: ids.length === 1 ? ids[0] : db.command.in(ids),
+      status: db.command.nin(['pending', 'leave'])
+    }).get({
       success: function(res) {
         const allSignups = res.data || []
         
-        // 先遍历所有报名记录，按activityId分组（只统计已报名状态，排除待定和请假）
-        const signupByActivity = new Map()
+        // 按 activityId 统计报名人数（去重）
+        const countById = new Map()
         allSignups.forEach(signup => {
-          // 过滤掉待定和请假状态的报名记录
-          if (signup.status === 'pending' || signup.status === 'leave') return
-          
-          const activityId = signup.activityId
-          if (!signupByActivity.has(activityId)) {
-            signupByActivity.set(activityId, new Set())
+          const id = signup.activityId
+          if (!countById.has(id)) {
+            countById.set(id, new Set())
           }
           const userKey = signup.userId || signup.nickName || signup._id
-          signupByActivity.get(activityId).add(userKey)
+          countById.get(id).add(userKey)
         })
         
-        // 然后更新每个活动的报名人数
-        activities.forEach((activity, index) => {
-          let signupCount = 0
-          const possibleIds = []
-          if (activity._id) possibleIds.push(activity._id)
-          if (activity.id && activity.id !== activity._id) possibleIds.push(activity.id)
-          
-          // 检查所有可能的活动ID
-          possibleIds.forEach(id => {
-            if (signupByActivity.has(id)) {
-              signupCount += signupByActivity.get(id).size
-            }
-          })
-          
-          activities[index].signupCount = signupCount
+        // 更新每个活动的报名人数
+        const updatedActivities = activities.map(activity => {
+          let count = 0
+          if (activity._id && countById.has(activity._id)) {
+            count += countById.get(activity._id).size
+          }
+          if (activity.id && activity.id !== activity._id && countById.has(activity.id)) {
+            count += countById.get(activity.id).size
+          }
+          return { ...activity, signupCount: count }
         })
         
-        that.setData({ activities: activities })
+        that.setData({ activities: updatedActivities })
       },
-      fail: function(err) {
-        console.error('updateSignupCount: 查询报名记录失败', err)
+      fail: function() {
         // 查询失败时，保持原有数据不变
       }
     })

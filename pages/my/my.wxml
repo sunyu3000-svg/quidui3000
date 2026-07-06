@@ -30,7 +30,7 @@
         <view wx:else class="nickname-placeholder-wrap">
           <text class="nickname-placeholder-text">点击设置昵称</text>
         </view>
-        <text class="edit-icon" bindtap="onNicknameTap">✏️</text>
+        <text class="edit-text" bindtap="onNicknameTap">修改</text>
       </view>
       
       <!-- 昵称编辑弹窗 -->
@@ -79,7 +79,6 @@
       </view>
     </view>
     <view class="admin-tag" wx:if="{{isAdmin}}">
-      <text class="admin-icon">👑</text>
       <text>{{isSuperAdmin ? '超级管理员' : '管理员'}}</text>
     </view>
   </view>
@@ -89,7 +88,6 @@
     
     <view wx:if="{{!hasUserInfo}}" class="login-hint-container">
       <view class="login-hint">
-        <text class="hint-icon">👆</text>
         <text class="hint-text">请先点击上方头像区域进行微信授权登录</text>
       </view>
     </view>
@@ -126,14 +124,14 @@
 
   <view class="admin-section" wx:if="{{isSuperAdmin}}">
     <view class="admin-header">
-      <text class="admin-title">👑 队长管理</text>
+      <text class="admin-title">队长管理</text>
       <button class="add-admin-btn" bindtap="addAdmin">添加队长</button>
     </view>
     <view class="admin-list" wx:if="{{admins.length > 0}}">
       <view class="admin-item" wx:for="{{admins}}" wx:key="_id">
         <view class="admin-info">
           <text class="admin-name">{{item.nickName || '未知'}}</text>
-          <text class="admin-role">{{item.role === 'super' ? '👑 超级管理员' : '⚽ 队长'}}</text>
+          <text class="admin-role">{{item.role === 'super' ? '超级管理员' : '队长'}}</text>
         </view>
         <view class="admin-actions">
           <button 
@@ -152,7 +150,6 @@
     </view>
     <view class="admin-tips">
       <view class="tips-title">
-        <text class="icon">💡</text>
         <text>使用说明</text>
       </view>
       <view class="tips-list">

@@ -246,11 +246,12 @@ Page({
           
           res.data.forEach((item) => {
             const key = item.userId || item.nickName || item._id
+            const rawAvatar = (item.avatarUrl && item.avatarUrl.trim()) || (item.avatar && item.avatar.trim()) || ''
             const user = {
               nickName: item.nickName || '未知用户',
               matchCount: item.matchCount || 0,
               status: item.status || 'signups',
-              avatarUrl: item.avatarUrl || '',
+              avatarUrl: rawAvatar,
               userId: item.userId || item._id || ''
             }
             userMap.set(key, user)
@@ -270,18 +271,117 @@ Page({
         }
         
         // 查询每个报名用户的总参与次数
-        that.loadUserMatchCounts(signups, pendingList, leaveList, function(updatedSignups, updatedPending, updatedLeave) {
-          that.setData({
-            signups: updatedSignups,
-            pendingList: updatedPending,
-            leaveList: updatedLeave,
-            currentList: that.data.currentTab === 'signups' ? updatedSignups : [...updatedPending, ...updatedLeave],
-            loading: false,
-            lastLoadTime: Date.now()
+        // 先从 users 集合查询头像，补充缺失的 avatarUrl
+        const allNickNames = [...signups, ...pendingList, ...leaveList].map(u => u.nickName).filter(n => n)
+        if (allNickNames.length > 0) {
+          db.collection('users').where({
+            nickName: db.command.in(allNickNames)
+          }).get({
+            timeout: 8000,
+            success: function(userRes) {
+              const users = userRes.data || []
+              const avatarMap = new Map()
+              users.forEach(u => {
+                if (u.nickName && (u.avatarUrl || u.avatar)) {
+                  avatarMap.set(u.nickName, u.avatarUrl || u.avatar)
+                }
+              })
+              
+              // 补充头像到 signups/pendingList/leaveList
+              const fillAvatar = function(list) {
+                return list.map(user => ({
+                  ...user,
+                  avatarUrl: (user.avatarUrl && user.avatarUrl.trim()) || avatarMap.get(user.nickName) || ''
+                }))
+              }
+              
+              signups = fillAvatar(signups)
+              pendingList = fillAvatar(pendingList)
+              leaveList = fillAvatar(leaveList)
+              
+              // 继续查询 matchCount
+              that.loadUserMatchCounts(signups, pendingList, leaveList, function(updatedSignups, updatedPending, updatedLeave) {
+                that.setData({
+                  signups: updatedSignups,
+                  pendingList: updatedPending,
+                  leaveList: updatedLeave,
+                  currentList: that.data.currentTab === 'signups' ? updatedSignups : [...updatedPending, ...updatedLeave],
+                  loading: false,
+                  lastLoadTime: Date.now()
+                })
+                // 加载评论
+                that.loadComments()
+              })
+            },
+            fail: function() {
+              // users 查询失败，尝试从 signups 集合兜底查询头像
+              db.collection('signups').where({
+                nickName: db.command.in(allNickNames)
+              }).orderBy('signupTime', 'desc').get({
+                success: function(signupRes) {
+                  const signupMap = new Map()
+                  ;(signupRes.data || []).forEach(s => {
+                    if (s.nickName && (s.avatarUrl || s.avatar) && !signupMap.has(s.nickName)) {
+                      signupMap.set(s.nickName, s.avatarUrl || s.avatar)
+                    }
+                  })
+                  
+                  const fillAvatar = function(list) {
+                    return list.map(user => ({
+                      ...user,
+                      avatarUrl: (user.avatarUrl && user.avatarUrl.trim()) || signupMap.get(user.nickName) || ''
+                    }))
+                  }
+                  
+                  signups = fillAvatar(signups)
+                  pendingList = fillAvatar(pendingList)
+                  leaveList = fillAvatar(leaveList)
+                  
+                  // 继续查询 matchCount
+                  that.loadUserMatchCounts(signups, pendingList, leaveList, function(updatedSignups, updatedPending, updatedLeave) {
+                    that.setData({
+                      signups: updatedSignups,
+                      pendingList: updatedPending,
+                      leaveList: updatedLeave,
+                      currentList: that.data.currentTab === 'signups' ? updatedSignups : [...updatedPending, ...updatedLeave],
+                      loading: false,
+                      lastLoadTime: Date.now()
+                    })
+                    that.loadComments()
+                  })
+                },
+                fail: function() {
+                  // 兜底也失败，继续查询 matchCount（不补充头像）
+                  that.loadUserMatchCounts(signups, pendingList, leaveList, function(updatedSignups, updatedPending, updatedLeave) {
+                    that.setData({
+                      signups: updatedSignups,
+                      pendingList: updatedPending,
+                      leaveList: updatedLeave,
+                      currentList: that.data.currentTab === 'signups' ? updatedSignups : [...updatedPending, ...updatedLeave],
+                      loading: false,
+                      lastLoadTime: Date.now()
+                    })
+                    that.loadComments()
+                  })
+                }
+              })
+            }
           })
-          // 加载评论
-          that.loadComments()
-        })
+        } else {
+          // 没有用户，直接查询 matchCount
+          that.loadUserMatchCounts(signups, pendingList, leaveList, function(updatedSignups, updatedPending, updatedLeave) {
+            that.setData({
+              signups: updatedSignups,
+              pendingList: updatedPending,
+              leaveList: updatedLeave,
+              currentList: that.data.currentTab === 'signups' ? updatedSignups : [...updatedPending, ...updatedLeave],
+              loading: false,
+              lastLoadTime: Date.now()
+            })
+            // 加载评论
+            that.loadComments()
+          })
+        }
         
         if (that.data.userInfo) {
           that.checkSignedUp(that.data.userInfo.nickName)
@@ -329,15 +429,44 @@ Page({
           }
         })
         
-        // 更新用户的 matchCount
-        const updateMatchCount = function(list) {
-          return list.map(user => ({
-            ...user,
-            matchCount: countMap.get(user.nickName) || 0
-          }))
-        }
-        
-        callback(updateMatchCount(signups), updateMatchCount(pendingList), updateMatchCount(leaveList))
+        // 从 users 集合查询头像，补充缺失的 avatarUrl
+        db.collection('users').where({
+          nickName: db.command.in(nickNames)
+        }).get({
+          timeout: 8000,
+          success: function(userRes) {
+            const users = userRes.data || []
+            const avatarMap = new Map()
+            users.forEach(u => {
+              if (u.nickName && (u.avatarUrl || u.avatar)) {
+                avatarMap.set(u.nickName, u.avatarUrl || u.avatar)
+              }
+            })
+            
+            const updateUser = function(list) {
+              return list.map(user => {
+                const avatarUrl = (user.avatarUrl && user.avatarUrl.trim()) || (avatarMap.get(user.nickName) && avatarMap.get(user.nickName).trim()) || ''
+                return {
+                  ...user,
+                  matchCount: countMap.get(user.nickName) || 0,
+                  avatarUrl: avatarUrl
+                }
+              })
+            }
+            
+            callback(updateUser(signups), updateUser(pendingList), updateUser(leaveList))
+          },
+          fail: function() {
+            // users 查询失败，只更新 matchCount，保留已有 avatarUrl
+            const updateMatchCount = function(list) {
+              return list.map(user => ({
+                ...user,
+                matchCount: countMap.get(user.nickName) || 0
+              }))
+            }
+            callback(updateMatchCount(signups), updateMatchCount(pendingList), updateMatchCount(leaveList))
+          }
+        })
       },
       fail: function() {
         // 查询失败，保持原数据
@@ -1184,8 +1313,9 @@ Page({
             that.loadComments()
           },
           fail: function(err) {
+            console.error('评论提交失败:', err)
             that.setData({ commentSubmitting: false })
-            wx.showToast({ title: '评论失败，请重试', icon: 'none' })
+            wx.showToast({ title: '评论失败:' + (err.message || '请重试'), icon: 'none' })
           }
         })
       },

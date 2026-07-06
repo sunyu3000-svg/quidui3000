@@ -1,6 +1,6 @@
 <view class="container">
   <view class="balance-card">
-    <view class="balance-title">💰 当前队费余额</view>
+    <view class="balance-title">当前队费余额</view>
     <view class="balance-amount">¥{{balance}}</view>
   </view>
 
@@ -12,7 +12,7 @@
 
   <view class="records-card" wx:if="{{isAdmin}}">
     <view class="card-header">
-      <text class="card-title">📊 收支明细</text>
+      <text class="card-title">收支明细</text>
       <text class="record-count">{{records.length}}条记录</text>
     </view>
     
@@ -36,7 +36,6 @@
     </view>
     
     <view class="empty-state" wx:else>
-      <text class="empty-icon">📝</text>
       <text class="empty-text">暂无收支记录</text>
     </view>
   </view>
@@ -44,7 +43,7 @@
   <!-- 普通用户统计报表 -->
   <view class="stats-card" wx:if="{{!isAdmin}}">
     <view class="stats-header">
-      <text class="stats-title">📊 队费统计</text>
+      <text class="stats-title">队费统计</text>
     </view>
     
     <view class="stats-content">
@@ -65,7 +64,7 @@
   </view>
 
   <view class="tips-card">
-    <view class="tips-header">💡 使用说明</view>
+    <view class="tips-header">使用说明</view>
     <view class="tips-content">
       <view class="tip-item">
         <text class="tip-number">1</text>
@@ -114,7 +113,7 @@
 <!-- 放鸽子管理弹窗 -->
 <view class="modal" wx:if="{{showDoveModal}}">
   <view class="modal-content">
-    <view class="modal-title">🕊️ 放鸽子管理</view>
+    <view class="modal-title">放鸽子管理</view>
     
     <!-- 日期筛选 -->
     <view class="form-item">
@@ -180,7 +179,6 @@
     </view>
     
     <view class="empty-state" wx:else>
-      <text class="empty-icon">👥</text>
       <text class="empty-text">{{selectedActivity ? '该活动无人报名' : '请先选择活动'}}</text>
     </view>
     
