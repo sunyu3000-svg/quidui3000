@@ -18,7 +18,15 @@ Page({
     showNicknameModal: false,
     editNickname: '',
     showAddAdminModal: false,
-    userList: []
+    userList: [],
+    // 活动归集
+    showArchiveModal: false,
+    archiveName: '',
+    isArchiving: false,
+    seasons: [],
+    showSeasonsModal: false,
+    showSeasonDetailModal: false,
+    currentSeasonDetail: null
   },
 
   onLoad: function() {
@@ -960,8 +968,319 @@ Page({
                 title: '删除失败',
                 icon: 'none'
               })
-              // 即使删除失败也刷新列表，防止状态不一致
               that.loadAdmins()
+            }
+          })
+        }
+      }
+    })
+  },
+
+  // ========== 活动归集 ==========
+
+  showArchiveModal: function() {
+    if (!this.data.isSuperAdmin) {
+      wx.showToast({ title: '仅超级管理员可操作', icon: 'none' })
+      return
+    }
+    this.setData({ showArchiveModal: true, archiveName: '' })
+  },
+
+  cancelArchiveModal: function() {
+    this.setData({ showArchiveModal: false, archiveName: '', isArchiving: false })
+  },
+
+  onArchiveNameInput: function(e) {
+    this.setData({ archiveName: e.detail.value })
+  },
+
+  confirmArchive: function() {
+    const name = (this.data.archiveName || '').trim()
+    if (!name) {
+      wx.showToast({ title: '请输入归集名称（如：2026赛季）', icon: 'none' })
+      return
+    }
+    const that = this
+    wx.showModal({
+      title: '确认归集',
+      content: `将以"${name}"保存当前所有活动数据快照，\n之后活动、签到、记账、鸽子榜将被清空。\n\n此操作不可撤销，是否继续？`,
+      confirmText: '确认归集',
+      confirmColor: '#dc2626',
+      success: function(res) {
+        if (res.confirm) {
+          that.executeArchive(name)
+        }
+      }
+    })
+  },
+
+  executeArchive: function(name) {
+    const that = this
+    this.setData({ isArchiving: true, showArchiveModal: false })
+    wx.showLoading({ title: '正在统计...', mask: true })
+
+    const queryColl = function(coll) {
+      return new Promise((resolve) => {
+        db.collection(coll).limit(500).get({
+          timeout: 15000,
+          success: function(r) { resolve(r.data || []) },
+          fail: function() { resolve([]) }
+        })
+      })
+    }
+
+    Promise.all([
+      queryColl('activities'),
+      queryColl('signups'),
+      queryColl('records'),
+      queryColl('doves')
+    ]).then(function(results) {
+      const activities = results[0]
+      const signups = results[1]
+      const records = results[2]
+      const doves = results[3]
+
+      wx.showLoading({ title: '正在生成快照...', mask: true })
+
+      // 统计活动
+      const activityList = activities.map(function(a) {
+        return { title: a.title || '', date: a.date || '', signupCount: (a.signups && a.signups.length) || 0, location: a.location || '' }
+      })
+
+      // 统计报名去重用户
+      const userIdSet = new Set()
+      const userMap = new Map()
+      signups.forEach(function(s) {
+        const uid = s.userId || s._openid || ''
+        if (uid) userIdSet.add(uid)
+        const nick = s.nickName || '未知'
+        if (nick) {
+          if (!userMap.has(nick)) {
+            userMap.set(nick, { nickName: nick, avatarUrl: s.avatarUrl || '', count: 0 })
+          }
+          userMap.get(nick).count++
+        }
+      })
+
+      // 参与排行前5
+      const topPlayers = Array.from(userMap.values())
+        .sort(function(a, b) { return b.count - a.count })
+        .slice(0, 5)
+
+      // 统计余额
+      let totalIncome = 0, totalExpense = 0
+      records.forEach(function(r) {
+        const amt = parseFloat(r.amount || 0)
+        if (r.type === 'income') totalIncome += amt
+        else totalExpense += amt
+      })
+
+      // 鸽子榜前5
+      const doveMap = new Map()
+      doves.forEach(function(d) {
+        const nick = d.nickName || '未知'
+        if (!doveMap.has(nick)) {
+          doveMap.set(nick, { nickName: nick, avatarUrl: d.avatarUrl || '', count: 0 })
+        }
+        doveMap.get(nick).count++
+      })
+      const doveRankings = Array.from(doveMap.values())
+        .sort(function(a, b) { return b.count - a.count })
+        .slice(0, 5)
+
+      // 确定赛季日期
+      const now = new Date()
+      const fmtDate = function(d) {
+        var m = d.getMonth() + 1
+        var day = d.getDate()
+        return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day
+      }
+      const endDate = fmtDate(now)
+      let startDate = endDate
+      if (activities.length > 0) {
+        const dates = activities.map(function(a) { return a.date || '' }).filter(Boolean).sort()
+        startDate = dates[0] || endDate
+      }
+
+      // 保存快照到 seasons
+      const seasonData = {
+        name: name,
+        status: 'archived',
+        startDate: startDate,
+        endDate: endDate,
+        createTime: db.serverDate(),
+        stats: {
+          totalActivities: activities.length,
+          totalSignups: signups.length,
+          totalParticipants: userIdSet.size,
+          totalFees: (totalIncome - totalExpense).toFixed(2)
+        },
+        topPlayers: topPlayers,
+        doveRankings: doveRankings,
+        activities: activityList
+      }
+
+      db.collection('seasons').add({
+        data: seasonData,
+        success: function(addRes) {
+          const seasonId = addRes._id
+          wx.showLoading({ title: '正在清理数据...', mask: true })
+
+          // 更新当前赛季设置
+          db.collection('settings').doc('currentSeason').set({
+            data: {
+              name: name,
+              seasonId: seasonId,
+              startDate: endDate
+            }
+          }).then(function() {
+            // 可能 settings 集合不存在，不阻塞流程
+          }).catch(function() {})
+
+          // 逐批删除原始数据
+          const delColl = function(collName) {
+            return new Promise(function(resolve) {
+              var totalDeleted = 0
+              const delBatch = function() {
+                db.collection(collName).limit(50).get({
+                  timeout: 10000,
+                  success: function(r) {
+                    if (!r.data || r.data.length === 0) {
+                      resolve(totalDeleted)
+                      return
+                    }
+                    var remaining = r.data.length
+                    if (remaining === 0) {
+                      resolve(totalDeleted)
+                      return
+                    }
+                    r.data.forEach(function(item) {
+                      db.collection(collName).doc(item._id).remove({
+                        success: function() {
+                          totalDeleted++
+                          remaining--
+                          if (remaining === 0) delBatch()
+                        },
+                        fail: function() {
+                          remaining--
+                          if (remaining === 0) delBatch()
+                        }
+                      })
+                    })
+                  },
+                  fail: function() { resolve(totalDeleted) }
+                })
+              }
+              delBatch()
+            })
+          }
+
+          Promise.all([
+            delColl('activities'),
+            delColl('signups'),
+            delColl('records'),
+            delColl('doves')
+          ]).then(function() {
+            wx.hideLoading()
+            wx.showToast({ title: '归集成功，新赛季开始！', icon: 'success', duration: 2000 })
+            that.setData({ isArchiving: false })
+          }).catch(function() {
+            wx.hideLoading()
+            wx.showToast({ title: '部分数据清理失败', icon: 'none' })
+            that.setData({ isArchiving: false })
+          })
+        },
+        fail: function() {
+          wx.hideLoading()
+          wx.showToast({ title: '归集失败，请重试', icon: 'none' })
+          that.setData({ isArchiving: false })
+        }
+      })
+    }).catch(function() {
+      wx.hideLoading()
+      wx.showToast({ title: '数据加载失败', icon: 'none' })
+      that.setData({ isArchiving: false })
+    })
+  },
+
+  loadSeasons: function() {
+    if (!this.data.isAdmin && !this.data.isSuperAdmin) {
+      wx.showToast({ title: '仅管理员可查看', icon: 'none' })
+      return
+    }
+    const that = this
+    wx.showLoading({ title: '加载中...' })
+    db.collection('seasons').orderBy('createTime', 'desc').limit(50).get({
+      timeout: 10000,
+      success: function(res) {
+        wx.hideLoading()
+        that.setData({
+          seasons: res.data || [],
+          showSeasonsModal: true
+        })
+        if (!res.data || res.data.length === 0) {
+          wx.showToast({ title: '暂无历史归集', icon: 'none' })
+        }
+      },
+      fail: function(err) {
+        wx.hideLoading()
+        console.error('加载历史归集失败:', err)
+        // collection not exists (-502005) 或权限问题，都显示空列表
+        that.setData({
+          seasons: [],
+          showSeasonsModal: true
+        })
+        wx.showToast({ title: '暂无历史归集', icon: 'none' })
+      }
+    })
+  },
+
+  closeSeasonsModal: function() {
+    this.setData({ showSeasonsModal: false })
+  },
+
+  showSeasonDetail: function(e) {
+    const season = e.currentTarget.dataset.season
+    this.setData({
+      currentSeasonDetail: season,
+      showSeasonDetailModal: true,
+      showSeasonsModal: false
+    })
+  },
+
+  closeSeasonDetail: function() {
+    this.setData({
+      showSeasonDetailModal: false,
+      currentSeasonDetail: null,
+      showSeasonsModal: true
+    })
+  },
+
+  deleteSeason: function(e) {
+    if (!this.data.isSuperAdmin) {
+      wx.showToast({ title: '仅超级管理员可删除', icon: 'none' })
+      return
+    }
+    const seasonId = e.currentTarget.dataset.id
+    const seasonName = e.currentTarget.dataset.name
+    const that = this
+    wx.showModal({
+      title: '确认删除',
+      content: '确定删除归集"' + seasonName + '"吗？\n删除后不可恢复。',
+      confirmColor: '#dc2626',
+      success: function(res) {
+        if (res.confirm) {
+          wx.showLoading({ title: '删除中...' })
+          db.collection('seasons').doc(seasonId).remove({
+            success: function() {
+              wx.hideLoading()
+              wx.showToast({ title: '删除成功', icon: 'success' })
+              that.loadSeasons()
+            },
+            fail: function(err) {
+              wx.hideLoading()
+              console.error('删除归集失败:', err)
+              wx.showToast({ title: '删除失败', icon: 'none' })
             }
           })
         }

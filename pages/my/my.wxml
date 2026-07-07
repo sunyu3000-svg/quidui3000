@@ -148,23 +148,153 @@
     <view class="admin-empty" wx:else>
       <text>暂无其他管理员，点击上方按钮添加</text>
     </view>
-    <view class="admin-tips">
-      <view class="tips-title">
-        <text>使用说明</text>
+  </view>
+
+  <!-- 活动归集 -->
+  <view class="section archive-section" wx:if="{{isAdmin || isSuperAdmin}}">
+    <view class="section-header">
+      <text class="section-title">活动归集</text>
+    </view>
+    <view class="archive-actions">
+      <button class="archive-btn primary" bindtap="showArchiveModal" wx:if="{{isSuperAdmin}}">新建归集</button>
+      <button class="archive-btn" bindtap="loadSeasons">历史归集</button>
+    </view>
+    <text class="archive-desc">归集后所有活动数据将保存为历史赛季，当前数据清空重新开始</text>
+  </view>
+
+  <!-- 归集弹窗 -->
+  <view wx:if="{{showArchiveModal}}" class="modal-overlay" bindtap="cancelArchiveModal">
+    <view class="modal-content archive-modal" catchtap="stopPropagation">
+      <view class="modal-title">活动归集</view>
+      <view class="archive-form-item">
+        <text class="archive-form-label">归集名称</text>
+        <input 
+          class="archive-form-input" 
+          type="text" 
+          value="{{archiveName}}" 
+          placeholder="如：2026赛季、测试赛季"
+          bindinput="onArchiveNameInput"
+          maxlength="20"
+        />
       </view>
-      <view class="tips-list">
-        <view class="tips-item">
-          <text class="number">1</text>
-          <text>超级管理员可以添加和删除队长</text>
+      <text class="archive-warning">归集后活动、签到、记账、鸽子榜数据将被清空，数据快照保存在历史归集中</text>
+      <view class="modal-buttons">
+        <button class="modal-btn cancel-btn" bindtap="cancelArchiveModal">取消</button>
+        <button class="modal-btn confirm-btn" bindtap="confirmArchive" disabled="{{isArchiving}}">确认归集</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 历史归集列表弹窗 -->
+  <view wx:if="{{showSeasonsModal}}" class="modal-overlay" bindtap="closeSeasonsModal">
+    <view class="modal-content seasons-modal" catchtap="stopPropagation">
+      <view class="modal-title">历史归集</view>
+      <scroll-view scroll-y class="seasons-list">
+        <view wx:if="{{seasons.length === 0}}" class="seasons-empty">
+          <text>暂无历史归集</text>
         </view>
-        <view class="tips-item">
-          <text class="number">2</text>
-          <text>队长拥有记账管理权限</text>
+        <view 
+          class="season-item" 
+          wx:for="{{seasons}}" 
+          wx:key="_id"
+        >
+          <view class="season-info" bindtap="showSeasonDetail" data-season="{{item}}">
+            <text class="season-name">{{item.name}}</text>
+            <text class="season-date">{{item.startDate}} ~ {{item.endDate}}</text>
+          </view>
+          <view class="season-stats" bindtap="showSeasonDetail" data-season="{{item}}">
+            <text class="season-stat">{{item.stats.totalActivities}}场</text>
+            <text class="season-stat">{{item.stats.totalParticipants}}人</text>
+          </view>
+          <view class="season-actions">
+            <text class="season-arrow" bindtap="showSeasonDetail" data-season="{{item}}">›</text>
+            <view class="season-delete" wx:if="{{isSuperAdmin}}" catchtap="deleteSeason" data-id="{{item._id}}" data-name="{{item.name}}">
+              <text>删除</text>
+            </view>
+          </view>
         </view>
-        <view class="tips-item">
-          <text class="number">3</text>
-          <text>普通成员可以报名活动和完善资料</text>
+      </scroll-view>
+      <view class="modal-buttons">
+        <button class="modal-btn cancel-btn" bindtap="closeSeasonsModal">关闭</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 归集详情弹窗 -->
+  <view wx:if="{{showSeasonDetailModal}}" class="modal-overlay" bindtap="closeSeasonDetail">
+    <view class="modal-content season-detail-modal" catchtap="stopPropagation">
+      <view class="modal-title">{{currentSeasonDetail.name}}</view>
+      <view class="season-detail-date">{{currentSeasonDetail.startDate}} ~ {{currentSeasonDetail.endDate}}</view>
+      
+      <view class="season-detail-stats">
+        <view class="sds-item">
+          <text class="sds-num">{{currentSeasonDetail.stats.totalActivities}}</text>
+          <text class="sds-label">总活动</text>
         </view>
+        <view class="sds-divider"></view>
+        <view class="sds-item">
+          <text class="sds-num">{{currentSeasonDetail.stats.totalParticipants}}</text>
+          <text class="sds-label">参与人数</text>
+        </view>
+        <view class="sds-divider"></view>
+        <view class="sds-item">
+          <text class="sds-num">{{currentSeasonDetail.stats.totalFees}}</text>
+          <text class="sds-label">队费余额</text>
+        </view>
+      </view>
+
+      <view class="detail-section" wx:if="{{currentSeasonDetail.topPlayers.length > 0}}">
+        <text class="detail-section-title">参与排行</text>
+        <view class="detail-player-item rank-{{index + 1}}" wx:for="{{currentSeasonDetail.topPlayers}}" wx:key="nickName">
+          <text class="detail-player-rank rank-{{index + 1}}">{{index + 1}}</text>
+          <text class="detail-player-name">{{item.nickName}}</text>
+          <text class="detail-player-count">{{item.count}}次</text>
+        </view>
+      </view>
+
+      <view class="detail-section" wx:if="{{currentSeasonDetail.doveRankings.length > 0}}">
+        <text class="detail-section-title detail-dove-title">鸽子榜</text>
+        <view class="detail-player-item dove-item" wx:for="{{currentSeasonDetail.doveRankings}}" wx:key="nickName">
+          <text class="detail-player-rank dove-rank">{{index + 1}}</text>
+          <text class="detail-player-name">{{item.nickName}}</text>
+          <text class="detail-player-count dove-count">{{item.count}}次</text>
+        </view>
+      </view>
+
+      <view class="detail-section" wx:if="{{currentSeasonDetail.activities.length > 0}}">
+        <text class="detail-section-title">活动列表</text>
+        <view class="detail-activity-item" wx:for="{{currentSeasonDetail.activities}}" wx:key="title">
+          <view class="da-info">
+            <text class="da-num">{{index + 1}}</text>
+            <text class="da-title">{{item.title}}</text>
+            <text class="da-date">{{item.date}}</text>
+          </view>
+          <text class="da-count">{{item.signupCount}}人</text>
+        </view>
+      </view>
+
+      <view class="modal-buttons">
+        <button class="modal-btn cancel-btn" bindtap="closeSeasonDetail">返回</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="admin-tips" wx:if="{{isSuperAdmin}}">
+    <view class="tips-title">
+      <text>使用说明</text>
+    </view>
+    <view class="tips-list">
+      <view class="tips-item">
+        <text class="number">1</text>
+        <text>超级管理员可以添加和删除队长</text>
+      </view>
+      <view class="tips-item">
+        <text class="number">2</text>
+        <text>队长拥有记账管理权限</text>
+      </view>
+      <view class="tips-item">
+        <text class="number">3</text>
+        <text>普通成员可以报名活动和完善资料</text>
       </view>
     </view>
   </view>

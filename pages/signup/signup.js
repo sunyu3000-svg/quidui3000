@@ -42,7 +42,9 @@ Page({
     historyFees: [],
     showPlayerHistory: false,
     historyPlayers: [],
-    historyTitles: []
+    historyTitles: [],
+    isEditing: false,
+    editingId: ''
   },
 
   onLoad: function() {
@@ -178,27 +180,23 @@ Page({
   },
 
   checkAdmin: function() {
-    // 设置为超级管理员
-    // console.log('signup: 设置为超级管理员')
-    this.setData({ isAdmin: true })
-    this.loadActivities()
-    return
-    
-    // 原有逻辑（已注释）
-    // const that = this
-    // wx.cloud.callFunction({
-    //   name: 'getOpenId',
-    //   success: function(res) {
-    //     const openId = res.result.openid
-    //     if (openId) {
-    //       that.checkAdminByOpenId(openId)
-    //     }
-    //   },
-    //   fail: function(err) {
-    //     // console.log('getOpenId error:', err)
-    //     that.loadActivities()
-    //   }
-    // })
+    const that = this
+    wx.cloud.callFunction({
+      name: 'getOpenId',
+      success: function(res) {
+        const openId = res.result.openid
+        if (openId) {
+          that.checkAdminByOpenId(openId)
+        } else {
+          that.setData({ isAdmin: false })
+          that.loadActivities()
+        }
+      },
+      fail: function(err) {
+        that.setData({ isAdmin: false })
+        that.loadActivities()
+      }
+    })
   },
 
   checkAdminByOpenId: function(openId) {
@@ -294,11 +292,13 @@ Page({
           return {
             ...item,
             date: activityDate,
-            status: status === 'active' ? '报名中' : (status === 'ended' || status === 'expired' ? '已结束' : (status === 'cancelled' ? '已取消' : status))
+            status: status === 'active' ? '报名中' : (status === 'ended' || status === 'expired' ? '已结束' : (status === 'cancelled' ? '已取消' : status)),
+            slideX: 0
           }
         })
         
-        // 活动列表排序：已结束的放最下面，同状态下日期越近越靠前
+        // 活动列表排序：报名中放最上面，已结束放下面，各自内部按距今天数升序（近的在上）
+        const todayTime = new Date(today).getTime()
         activities.sort((a, b) => {
           const statusA = a.status === '报名中' ? 0 : 1
           const statusB = b.status === '报名中' ? 0 : 1
@@ -307,10 +307,10 @@ Page({
             return statusA - statusB
           }
           
-          // 同状态下，日期越近越靠前（降序）
-          const dateA = new Date(a.date)
-          const dateB = new Date(b.date)
-          return dateB - dateA
+          // 同状态下，按日期与今天的绝对差值升序（离今天最近的在前）
+          const diffA = Math.abs(new Date(a.date).getTime() - todayTime)
+          const diffB = Math.abs(new Date(b.date).getTime() - todayTime)
+          return diffA - diffB
         })
         
         // 前端限制：最多显示10个活动（不删除数据库，只在前端限制显示）
@@ -402,7 +402,26 @@ Page({
   },
 
   goToDetail: function(e) {
+    // 如果正在滑动，不触发跳转
+    if (this._isSliding) {
+      this._isSliding = false
+      return
+    }
+    
     const activity = e.currentTarget.dataset.activity
+    const index = this.data.activities.findIndex(a => a._id === activity._id)
+    
+    // 关闭其他卡片的滑动
+    this.closeOtherSlides(index)
+    
+    // 如果当前卡片已滑开，先关闭滑动
+    if (index >= 0 && this.data.activities[index].slideX && this.data.activities[index].slideX < 0) {
+      const activities = this.data.activities
+      activities[index].slideX = 0
+      this.setData({ activities: activities })
+      return
+    }
+    
     const activityId = activity.id || activity._id
     
     // 统一转换为英文状态值，避免中文编码问题
@@ -430,7 +449,7 @@ Page({
   },
 
   showAddActivityModal: function() {
-    this.setData({ showAddModal: true })
+    this.setData({ showAddModal: true, isEditing: false, editingId: '' })
     this.loadHistoryFromDb()
   },
 
@@ -444,6 +463,8 @@ Page({
       showActivityTypeHistory: false,
       showFeeHistory: false,
       showPlayerHistory: false,
+      isEditing: false,
+      editingId: '',
       newActivity: {
         title: '',
         date: '',
@@ -704,7 +725,7 @@ Page({
   },
 
   addActivity: function() {
-    const { newActivity } = this.data
+    const { newActivity, isEditing, editingId } = this.data
     
     if (!newActivity.title) {
       wx.showToast({ title: '请输入活动标题', icon: 'none' })
@@ -751,17 +772,275 @@ Page({
       organizerAvatar: userInfo.avatarUrl || ''
     }
 
-    db.collection('activities').add({
-      data: activityData,
+    if (isEditing && editingId) {
+      // 编辑模式：更新现有活动
+      db.collection('activities').doc(editingId).update({
+        data: {
+          title: activityData.title,
+          date: activityData.date,
+          timeValue: activityData.timeValue,
+          time: activityData.time,
+          location: activityData.location,
+          latitude: activityData.latitude,
+          longitude: activityData.longitude,
+          activityType: activityData.activityType,
+          fee: activityData.fee,
+          description: activityData.description,
+          maxPlayers: activityData.maxPlayers
+        },
+        success: function() {
+          wx.showToast({ title: '更新成功', icon: 'success' })
+          that.closeAddModal()
+          that.loadActivities()
+        },
+        fail: function() {
+          wx.showToast({ title: '更新失败', icon: 'none' })
+        }
+      })
+    } else {
+      // 新增模式
+      db.collection('activities').add({
+        data: activityData,
+        success: function(res) {
+          // console.log('addActivity success:', res)
+          wx.showToast({ title: '发布成功', icon: 'success' })
+          that.closeAddModal()
+          that.loadActivities()
+        },
+        fail: function(err) {
+          // console.error('addActivity fail:', err)
+          wx.showToast({ title: '发布失败', icon: 'none' })
+        }
+      })
+    }
+  },
+
+  // 左滑删除相关
+  touchStartX: 0,
+  touchStartY: 0,
+
+  onTouchStart: function(e) {
+    if (!this.data.isAdmin) {
+      this._isAdminSlide = false
+      return
+    }
+    this._isAdminSlide = true
+    this.touchStartX = e.touches[0].clientX
+    this.touchStartY = e.touches[0].clientY
+    this._lastMoveTime = 0
+    this._isSliding = false
+    const index = e.currentTarget.dataset.index
+    this.touchStartSlideX = this.data.activities[index]?.slideX || 0
+    this.closeOtherSlides(index)
+  },
+
+  onTouchMove: function(e) {
+    if (!this._isAdminSlide) return
+
+    const now = Date.now()
+    if (this._lastMoveTime && now - this._lastMoveTime < 32) {
+      return
+    }
+    this._lastMoveTime = now
+
+    const index = e.currentTarget.dataset.index
+    const moveX = e.touches[0].clientX
+    const moveY = e.touches[0].clientY
+    const deltaX = moveX - this.touchStartX
+    const deltaY = moveY - this.touchStartY
+
+    if (Math.abs(deltaY) > Math.abs(deltaX) * 1.5) return
+
+    if (Math.abs(deltaX) > 5) {
+      this._isSliding = true
+    }
+
+    const startSlideX = this.touchStartSlideX || 0
+    const pxToRpx = 750 / wx.getSystemInfoSync().windowWidth
+    let newSlideX = startSlideX + deltaX * pxToRpx
+
+    // 限制滑动范围：最小-280（露出两个按钮），最大0（收回）
+    newSlideX = Math.max(Math.min(newSlideX, 0), -280)
+
+    this.setData({
+      [`activities[${index}].slideX`]: newSlideX
+    })
+  },
+
+  onTouchEnd: function(e) {
+    const index = e.currentTarget.dataset.index
+    const activities = this.data.activities
+    if (!activities || !activities[index]) return
+
+    const item = activities[index]
+    const slideX = item.slideX || 0
+
+    if (slideX < -60) {
+      this.setData({
+        [`activities[${index}].slideX`]: -280
+      })
+    } else {
+      this.setData({
+        [`activities[${index}].slideX`]: 0
+      })
+    }
+  },
+
+  closeOtherSlides: function(currentIndex) {
+    const activities = this.data.activities
+    if (!activities) return
+    const updates = {}
+    let hasUpdate = false
+    activities.forEach((item, idx) => {
+      if (idx !== currentIndex && item.slideX && item.slideX < 0) {
+        updates[`activities[${idx}].slideX`] = 0
+        hasUpdate = true
+      }
+    })
+    if (hasUpdate) {
+      this.setData(updates)
+    }
+  },
+
+  closeAllSlides: function() {
+    const activities = this.data.activities
+    if (!activities) return
+    const updates = {}
+    let hasUpdate = false
+    activities.forEach((item, idx) => {
+      if (item.slideX && item.slideX < 0) {
+        updates[`activities[${idx}].slideX`] = 0
+        hasUpdate = true
+      }
+    })
+    if (hasUpdate) {
+      this.setData(updates)
+    }
+  },
+
+  editActivity: function(e) {
+    if (!this.data.isAdmin) {
+      wx.showToast({ title: '只有管理员可以编辑活动', icon: 'none' })
+      return
+    }
+
+    const id = e.currentTarget.dataset.id
+    const activity = this.data.activities.find(a => a._id === id)
+    if (!activity) {
+      wx.showToast({ title: '活动数据异常，无法编辑', icon: 'none' })
+      return
+    }
+    if (!activity._id) {
+      wx.showToast({ title: '活动数据异常，无法编辑', icon: 'none' })
+      return
+    }
+
+    // 解析 time 字段为 date 和 timeValue
+    let date = activity.date || ''
+    let timeValue = ''
+    if (activity.time) {
+      const timeMatch = activity.time.match(/(\d{2}):(\d{2})/)
+      if (timeMatch) {
+        timeValue = `${timeMatch[1]}:${timeMatch[2]}`
+      }
+    }
+
+    this.setData({
+      showAddModal: true,
+      isEditing: true,
+      editingId: activity._id,
+      newActivity: {
+        title: activity.title || '',
+        date: date,
+        timeValue: timeValue,
+        time: activity.time || '',
+        location: activity.location || '',
+        activityType: activity.activityType || '',
+        fee: activity.fee || '',
+        description: activity.description || '',
+        maxPlayers: String(activity.maxPlayers || '')
+      }
+    })
+    this.loadHistoryFromDb()
+  },
+
+  deleteActivity: function(e) {
+    if (!this.data.isAdmin) {
+      wx.showToast({ title: '只有管理员可以删除活动', icon: 'none' })
+      return
+    }
+
+    const id = e.currentTarget.dataset.id
+    const index = e.currentTarget.dataset.index
+    if (!id) return
+
+    const that = this
+    wx.showModal({
+      title: '确认删除',
+      content: '删除后该活动的报名记录也将被删除，是否继续？',
+      confirmColor: '#dc2626',
       success: function(res) {
-        // console.log('addActivity success:', res)
-        wx.showToast({ title: '发布成功', icon: 'success' })
-        that.closeAddModal()
-        that.loadActivities()
+        if (res.confirm) {
+          wx.showLoading({ title: '删除中...' })
+          
+          // 先删除报名记录
+          db.collection('signups').where({
+            activityId: id
+          }).get({
+            success: function(signupRes) {
+              const signups = signupRes.data || []
+              let deletedCount = 0
+              
+              if (signups.length === 0) {
+                // 没有报名记录，直接删除活动
+                that._removeActivity(id, index)
+                return
+              }
+              
+              signups.forEach(s => {
+                db.collection('signups').doc(s._id).remove({
+                  success: function() {
+                    deletedCount++
+                    if (deletedCount === signups.length) {
+                      that._removeActivity(id, index)
+                    }
+                  },
+                  fail: function() {
+                    deletedCount++
+                    if (deletedCount === signups.length) {
+                      that._removeActivity(id, index)
+                    }
+                  }
+                })
+              })
+            },
+            fail: function() {
+              // 查询失败也尝试删除活动
+              that._removeActivity(id, index)
+            }
+          })
+        }
+      }
+    })
+  },
+
+  _removeActivity: function(id, index) {
+    const that = this
+    db.collection('activities').doc(id).remove({
+      success: function() {
+        wx.hideLoading()
+        wx.showToast({ title: '删除成功', icon: 'success' })
+        
+        // 从列表中移除
+        const activities = that.data.activities
+        activities.splice(index, 1)
+        that.setData({
+          activities: activities
+        })
       },
-      fail: function(err) {
-        // console.error('addActivity fail:', err)
-        wx.showToast({ title: '发布失败', icon: 'none' })
+      fail: function() {
+        wx.hideLoading()
+        wx.showToast({ title: '删除失败', icon: 'none' })
       }
     })
   }

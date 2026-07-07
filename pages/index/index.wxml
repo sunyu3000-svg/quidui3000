@@ -2,7 +2,7 @@
   <!-- 顶部栏 -->
   <view class="top-bar">
     <view class="club-name-bar">
-      <text class="club-name-text">厦门天涯足球俱乐部</text>
+      <text class="club-name-text">{{seasonName}}</text>
       <text class="club-slogan">热爱足球 · 享受运动</text>
     </view>
   </view>
@@ -33,19 +33,18 @@
   <!-- 本周报名趋势 -->
   <view class="card">
     <view class="card-header">
-      <text class="card-title">本周报名</text>
-      <text class="card-sub">人数趋势</text>
+      <text class="card-title">本周活动</text>
+      <text class="card-sub">场次分布</text>
     </view>
     <view class="chart-bars">
       <view class="bar-item" wx:for="{{chartData.labels}}" wx:key="index">
         <text class="bar-value">{{chartData.data[index]}}</text>
-        <view class="bar" style="height: {{chartData.data[index] * 5}}px;"></view>
+        <view class="bar" style="height: {{chartData.data[index] * 15}}px;"></view>
         <text class="bar-label">{{item}}</text>
       </view>
     </view>
     <view class="chart-footer">
-      <text>本周{{stats.weeklyActivity}}场</text>
-      <text>场均{{stats.avgSignups}}人</text>
+      <text>本周共{{stats.weeklyActivity}}场</text>
     </view>
   </view>
 

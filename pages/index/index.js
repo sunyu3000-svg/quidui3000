@@ -3,6 +3,7 @@ const db = wx.cloud.database()
 Page({
   data: {
     isAdmin: true,  // 默认超级管理员
+    seasonName: '厦门天涯足球俱乐部',
     currentActivity: null,  // 当前活动主题
     
     stats: {
@@ -79,16 +80,28 @@ Page({
   },
 
   onLoad: function() {
-    const that = this
-    that.checkAdmin()
-    setTimeout(() => {
-      that.loadStats()
-    }, 300)
+    this.checkAdmin()
+    this._isLoadingStats = false
   },
 
   onShow: function() {
     this.updateOnlineStatus()
     this.loadStats()
+    this.loadSeasonName()
+  },
+  
+  loadSeasonName: function() {
+    const that = this
+    db.collection('settings').doc('currentSeason').get({
+      success: function(res) {
+        if (res && res.data && res.data.name) {
+          that.setData({ seasonName: res.data.name })
+        }
+      },
+      fail: function() {
+        // settings 集合或文档不存在，使用默认名称
+      }
+    })
   },
   
   // 更新用户在线状态（记录用户访问小程序的时间）
@@ -166,6 +179,8 @@ Page({
   },
 
   loadStats: function() {
+    if (this._isLoadingStats) return
+    this._isLoadingStats = true
     const that = this
     this.setData({ loading: true })
     
@@ -224,6 +239,20 @@ Page({
             // 匹配 YYYY年MM月DD日
             const m4 = str.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日?$/)
             if (m4) return `${m4[1]}-${String(m4[2]).padStart(2,'0')}-${String(m4[3]).padStart(2,'0')}`
+            
+            // 支持无年份格式："7月10日" → 使用当前年
+            const m5 = str.match(/^(\d{1,2})月(\d{1,2})日?$/)
+            if (m5) {
+              const year = new Date().getFullYear()
+              return `${year}-${String(m5[1]).padStart(2,'0')}-${String(m5[2]).padStart(2,'0')}`
+            }
+            
+            // 支持无年份格式："7/10" 或 "7-10" → 使用当前年
+            const m6 = str.match(/^(\d{1,2})[\/-](\d{1,2})$/)
+            if (m6) {
+              const year = new Date().getFullYear()
+              return `${year}-${String(m6[1]).padStart(2,'0')}-${String(m6[2]).padStart(2,'0')}`
+            }
           }
           
           // 兜底：Date 对象、时间戳、ISO 字符串等
@@ -289,9 +318,11 @@ Page({
         setTimeout(() => {
           that.animateStatsCards()
         }, 400)
+        that._isLoadingStats = false
       },
       fail: function() {
         // 查询失败，使用默认值
+        that._isLoadingStats = false
       }
     })
   },
@@ -860,7 +891,7 @@ loadTopPlayersFromDatabase: function() {
     that.loadWeeklyTrendData(activities)
   },
   
-  // 加载本周趋势数据（每天的报名人数）
+  // 加载本周趋势数据（每天的活动场数）
   loadWeeklyTrendData: function(allActivities) {
     const that = this
     
@@ -906,6 +937,20 @@ loadTopPlayersFromDatabase: function() {
         
         const m4 = str.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日?$/)
         if (m4) return `${m4[1]}-${String(m4[2]).padStart(2,'0')}-${String(m4[3]).padStart(2,'0')}`
+        
+        // 支持无年份格式："7月10日" → 使用当前年
+        const m5 = str.match(/^(\d{1,2})月(\d{1,2})日?$/)
+        if (m5) {
+          const year = new Date().getFullYear()
+          return `${year}-${String(m5[1]).padStart(2,'0')}-${String(m5[2]).padStart(2,'0')}`
+        }
+        
+        // 支持无年份格式："7/10" 或 "7-10" → 使用当前年
+        const m6 = str.match(/^(\d{1,2})[\/-](\d{1,2})$/)
+        if (m6) {
+          const year = new Date().getFullYear()
+          return `${year}-${String(m6[1]).padStart(2,'0')}-${String(m6[2]).padStart(2,'0')}`
+        }
       }
       
       const d = new Date(raw)
@@ -916,77 +961,20 @@ loadTopPlayersFromDatabase: function() {
       return `${year}-${month}-${day}`
     }
     
-    // 按日期统计报名人数（初始化为0）
-    const dailySignupCount = [0, 0, 0, 0, 0, 0, 0]
+    // 按日期统计活动场数
+    const dailyActivityCount = [0, 0, 0, 0, 0, 0, 0]
     const activities = allActivities || []
     
-    // 第一步：从 allActivities 的 signupCount 字段统计（兼容字符串）
     activities.forEach(activity => {
       const normalizedDate = normalizeDate(activity.date)
       if (!normalizedDate) return
       const dayIndex = weekDays.indexOf(normalizedDate)
-      if (dayIndex < 0 || dayIndex >= 7) return
-      
-      let count = 0
-      if (activity.signups && Array.isArray(activity.signups)) {
-        count = activity.signups.length
-      } else if (activity.signupCount != null) {
-        count = parseInt(activity.signupCount) || 0
-      }
-      dailySignupCount[dayIndex] += count
-    })
-    
-    // 第二步：获取本周活动的 ID 列表，用 activityId 精确查询 signups 集合
-    const activityIds = []
-    const activityIdSet = new Set()
-    const idToDate = new Map()
-    
-    activities.forEach(a => {
-      const nd = normalizeDate(a.date)
-      if (!nd || weekDays.indexOf(nd) < 0) return
-      if (a._id && !activityIdSet.has(a._id)) {
-        activityIds.push(a._id)
-        activityIdSet.add(a._id)
-        idToDate.set(a._id, nd)
-      }
-      if (a.id && a.id !== a._id && !activityIdSet.has(a.id)) {
-        activityIds.push(a.id)
-        activityIdSet.add(a.id)
-        idToDate.set(a.id, nd)
+      if (dayIndex >= 0 && dayIndex < 7) {
+        dailyActivityCount[dayIndex]++
       }
     })
     
-    if (activityIds.length === 0) {
-      // 没有本周活动，直接显示已有的数据
-      that.setData({ 'chartData.data': dailySignupCount })
-      return
-    }
-    
-    // 用 activityId 精确查询 signups 集合，然后通过 activityId->date 映射累加柱状图
-    const query = activityIds.length === 1
-      ? { activityId: activityIds[0] }
-      : { activityId: db.command.in(activityIds) }
-    
-    db.collection('signups').where(query).limit(500).get({
-      timeout: 5000,
-      success: function(res) {
-        const signups = res.data || []
-        signups.forEach(signup => {
-          if (signup.status === 'pending' || signup.status === 'leave') return
-          const date = idToDate.get(signup.activityId)
-          if (!date) return
-          const dayIndex = weekDays.indexOf(date)
-          if (dayIndex >= 0 && dayIndex < 7) {
-            dailySignupCount[dayIndex]++
-          }
-        })
-        that.setData({ 'chartData.data': dailySignupCount })
-      },
-      fail: function() {
-        // 查询失败，使用 activities 集合中的数据
-        that.setData({ 'chartData.data': dailySignupCount })
-      }
-    })
+    that.setData({ 'chartData.data': dailyActivityCount })
   },
   
   // 加载当前活动主题（使用已有活动列表，不再重复查询数据库）
