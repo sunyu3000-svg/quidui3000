@@ -201,7 +201,7 @@
   text-align: center;
   font-size: 26rpx;
   font-weight: 700;
-  color: #bbb;
+  color: #2c3e50;
 }
 
 .rank-num.rank-top {
@@ -209,7 +209,7 @@
 }
 
 .rank-num.rank-dove {
-  color: #999;
+  color: #2c3e50;
 }
 
 .rank-avatar {
@@ -245,12 +245,12 @@
 
 .rank-count {
   font-size: 26rpx;
-  color: #666;
+  color: #2c3e50;
   font-weight: 600;
 }
 
 .rank-dove-count {
-  color: #999;
+  color: #2c3e50;
 }
 
 /* ===== 空状态 ===== */
@@ -691,7 +691,7 @@
 
 .player-count {
   font-size: 24rpx;
-  color: #888;
+  color: #2c3e50;
 }
 
 .action-arrow {
