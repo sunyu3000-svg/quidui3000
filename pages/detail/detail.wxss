@@ -150,11 +150,6 @@
   margin-right: 12rpx;
 }
 
-.edit-link {
-  font-size: 24rpx;
-  color: #999;
-}
-
 /* ===== 描述卡片 ===== */
 .desc-card {
   background-color: #ffffff;

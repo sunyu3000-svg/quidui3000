@@ -1155,62 +1155,7 @@ Page({
     })
   },
   
-  // 修改活动地址（仅组织者）
-  handleEditLocation: function(e) {
-    e.stopPropagation()
-    
-    const that = this
-    wx.chooseLocation({
-      success: function(res) {
-        // 保存完整地址：name（地点名称） + address（省市区街道）
-        let fullAddress = ''
-        if (res.name) fullAddress += res.name
-        if (res.address && res.address !== res.name) {
-          if (fullAddress) fullAddress += ' '
-          fullAddress += res.address
-        }
-        fullAddress = fullAddress || '未知地点'
-        
-        const activity = that.data.activity
-        const activityId = activity.id || activity._id
-        
-        if (!activityId) {
-          wx.showToast({ title: '活动ID无效', icon: 'none' })
-          return
-        }
-        
-        db.collection('activities').doc(activityId).update({
-          data: {
-            location: fullAddress,
-            latitude: res.latitude,
-            longitude: res.longitude
-          },
-          success: function() {
-            that.setData({
-              'activity.location': fullAddress,
-              'activity.latitude': res.latitude,
-              'activity.longitude': res.longitude
-            })
-            wx.showToast({ title: '地址修改成功', icon: 'success' })
-          },
-          fail: function(err) {
-            // console.error('修改地址失败:', err)
-            wx.showToast({ title: '修改地址失败', icon: 'none' })
-          }
-        })
-      },
-      fail: function(err) {
-        // console.error('选择地点失败:', err)
-        if (err.errMsg && err.errMsg.includes('auth deny')) {
-          wx.showModal({
-            title: '提示',
-            content: '请在系统设置中开启位置权限',
-            showCancel: false
-          })
-        }
-      }
-    })
-  },
+  // 修改  },
 
   // ========== 评论功能 ==========
 
