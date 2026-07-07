@@ -931,7 +931,7 @@ Page({
       this.setData({ isAdmin: false })
       return
     }
-    db.collection('admins').where({ _openid: myInfo.openId }).get({
+    db.collection('admins').where({ openId: myInfo.openId }).get({
       success: function(res) {
         that.setData({ isAdmin: res.data.length > 0 })
       },

@@ -27,9 +27,9 @@
         <text class="label">球衣号码：</text>
         <text class="value">{{userInfo.jerseyNumber}}</text>
       </view>
-      <view class="name-row" wx:if="{{isAdmin && userInfo.phone}}">
+      <view class="name-row" wx:if="{{isAdmin}}">
         <text class="label">电话号码：</text>
-        <text class="value">{{userInfo.phone}}</text>
+        <text class="value">{{userInfo.phone || '未填写'}}</text>
       </view>
       <view class="name-row remark-row" bindtap="setRemark">
         <text class="label">备注名：</text>
