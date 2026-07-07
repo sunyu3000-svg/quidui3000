@@ -805,7 +805,6 @@ Page({
                   })
                 },
                 fail: function(err) {
-                  // console.log('update error:', err)
                   wx.showToast({
                     title: '保存失败',
                     icon: 'none'
@@ -813,31 +812,80 @@ Page({
                 }
               })
             } else {
-              db.collection('users').add({
-                data: {
-                  openId: openId,
-                  ...userData,
-                  createTime: new Date(),
-                  updateTime: new Date()
+              // 按 openId 没查到，尝试按 nickName 查，避免创建重复记录
+              db.collection('users').where({
+                nickName: userData.nickName
+              }).get({
+                success: function(nickRes) {
+                  if (nickRes.data.length > 0) {
+                    db.collection('users').doc(nickRes.data[0]._id).update({
+                      data: {
+                        openId: openId,
+                        ...userData,
+                        updateTime: new Date()
+                      },
+                      success: function() {
+                        wx.showToast({
+                          title: '保存成功',
+                          icon: 'success'
+                        })
+                      },
+                      fail: function() {
+                        wx.showToast({
+                          title: '保存失败',
+                          icon: 'none'
+                        })
+                      }
+                    })
+                  } else {
+                    db.collection('users').add({
+                      data: {
+                        openId: openId,
+                        ...userData,
+                        createTime: new Date(),
+                        updateTime: new Date()
+                      },
+                      success: function() {
+                        wx.showToast({
+                          title: '保存成功',
+                          icon: 'success'
+                        })
+                      },
+                      fail: function() {
+                        wx.showToast({
+                          title: '保存失败',
+                          icon: 'none'
+                        })
+                      }
+                    })
+                  }
                 },
-                success: function() {
-                  wx.showToast({
-                    title: '保存成功',
-                    icon: 'success'
-                  })
-                },
-                fail: function(err) {
-                  // console.log('add error:', err)
-                  wx.showToast({
-                    title: '保存失败',
-                    icon: 'none'
+                fail: function() {
+                  db.collection('users').add({
+                    data: {
+                      openId: openId,
+                      ...userData,
+                      createTime: new Date(),
+                      updateTime: new Date()
+                    },
+                    success: function() {
+                      wx.showToast({
+                        title: '保存成功',
+                        icon: 'success'
+                      })
+                    },
+                    fail: function() {
+                      wx.showToast({
+                        title: '保存失败',
+                        icon: 'none'
+                      })
+                    }
                   })
                 }
               })
             }
           },
           fail: function(err) {
-            // console.log('query error:', err)
             wx.showToast({
               title: '保存失败',
               icon: 'none'

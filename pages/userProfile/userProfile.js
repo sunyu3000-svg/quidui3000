@@ -142,6 +142,13 @@ Page({
         const newUserId = userData._id || userId
         let avatarUrl = (userData.avatarUrl && userData.avatarUrl.trim()) || (userInfo && userInfo.avatarUrl) || ''
         
+        // 如果查到的记录缺少关键字段，尝试按 nickName 查最新记录
+        const hasKeyData = userData.phone || userData.position || userData.jerseyNumber || userData.avatarUrl
+        if (!hasKeyData && userData.nickName) {
+          that.loadUserInfoByNickName(userData.nickName, callback)
+          return
+        }
+        
         // 如果users集合里没有头像，尝试从signups获取
         if (!avatarUrl && userData.nickName) {
           that.fetchAvatarFromSignups(userData.nickName, function(fetchedAvatar) {
@@ -278,7 +285,17 @@ Page({
     }).get({
       success: function(res) {
         if (res.data.length > 0) {
-          const userData = res.data[0]
+          // 如果有多条记录，取 updateTime 最新的
+          const records = res.data
+          const latestRecord = records.length > 1
+            ? records.sort((a, b) => {
+                const timeA = a.updateTime ? new Date(a.updateTime) : new Date(0)
+                const timeB = b.updateTime ? new Date(b.updateTime) : new Date(0)
+                return timeB - timeA
+              })[0]
+            : records[0]
+          
+          const userData = latestRecord
           const newUserId = userData._id || nickName
           let avatarUrl = (userData.avatarUrl && userData.avatarUrl.trim()) || (userInfo && userInfo.avatarUrl) || ''
           
