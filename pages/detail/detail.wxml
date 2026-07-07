@@ -107,6 +107,7 @@
     <view class="teams-header">
       <text class="teams-title">分队</text>
       <view class="teams-actions" wx:if="{{isAdmin}}">
+        <text class="team-action-btn" bindtap="shareTeamAssignments">分享分队</text>
         <text class="team-action-btn" bindtap="autoAssignTeams">自动分队</text>
         <text class="team-action-btn" bindtap="showTeamManager">管理队伍</text>
       </view>

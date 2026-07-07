@@ -419,7 +419,95 @@ Page({
     })
   },
 
-  // 查询用户的总参与次数
+  // ========== 辅助函数 ==========
+
+  // 检查距离活动开始时间是否不足6小时
+  isWithin6Hours: function() {
+    const { activity } = this.data
+    if (!activity || !activity.date) return false
+
+    // 解析日期和时间
+    const dateStr = activity.date
+    const timeStr = activity.time || '00:00'
+
+    // 尝试解析日期（支持 2026-07-12、2026/07/12 等格式）
+    let startTime
+    const dateMatch = dateStr.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/)
+    if (dateMatch) {
+      const year = parseInt(dateMatch[1])
+      const month = parseInt(dateMatch[2]) - 1
+      const day = parseInt(dateMatch[3])
+      // 解析时间
+      const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})/)
+      const hour = timeMatch ? parseInt(timeMatch[1]) : 0
+      const minute = timeMatch ? parseInt(timeMatch[2]) : 0
+      startTime = new Date(year, month, day, hour, minute)
+    } else {
+      // 兜底：直接用 new Date
+      startTime = new Date(dateStr + ' ' + timeStr)
+    }
+
+    if (isNaN(startTime.getTime())) return false
+
+    const now = new Date()
+    const diffMs = startTime - now
+    const sixHoursMs = 6 * 60 * 60 * 1000
+
+    return diffMs > 0 && diffMs < sixHoursMs
+  },
+
+  // 删除指定用户的分队分配
+  removePlayerFromTeam: function(nickName) {
+    const { teamAssignments } = this.data
+    const key = nickName
+    if (teamAssignments[key] !== undefined) {
+      const newAssignments = { ...teamAssignments }
+      delete newAssignments[key]
+      this.setData({ teamAssignments: newAssignments })
+      this.updateTeamPlayers()
+      this.saveTeamAssignments()
+    }
+  },
+
+  // 生成分队分享文本
+  generateTeamShareText: function() {
+    const { activity, teamPlayersList, unassignedPlayers } = this.data
+    let text = '🏟 ' + (activity.title || '活动') + ' 分队情况\n\n'
+
+    teamPlayersList.forEach(team => {
+      text += team.teamName + '（' + team.players.length + '人）:\n'
+      if (team.players.length > 0) {
+        team.players.forEach((p, i) => {
+          text += (i + 1) + '. ' + p.nickName + '\n'
+        })
+      } else {
+        text += '暂无成员\n'
+      }
+      text += '\n'
+    })
+
+    if (unassignedPlayers.length > 0) {
+      text += '未分配（' + unassignedPlayers.length + '人）:\n'
+      unassignedPlayers.forEach((p, i) => {
+        text += (i + 1) + '. ' + p.nickName + '\n'
+      })
+    }
+
+    return text
+  },
+
+  // 分享分队到群聊
+  shareTeamAssignments: function() {
+    const text = this.generateTeamShareText()
+    wx.setClipboardData({
+      data: text,
+      success: function() {
+        wx.showToast({ title: '分队信息已复制', icon: 'success' })
+      }
+    })
+  },
+
+  // ========== 原函数 ==========
   loadUserMatchCounts: function(signups, pendingList, leaveList, callback) {
     const that = this
     
@@ -837,10 +925,11 @@ Page({
     const that = this
     const { hasUserInfo, currentStatus, userInfo } = this.data
 
-    // console.log('=== handlePending ===')
-    // console.log('hasUserInfo:', hasUserInfo)
-    // console.log('currentStatus:', currentStatus)
-    // console.log('userInfo:', userInfo)
+    // 6小时限制检查
+    if (this.isWithin6Hours()) {
+      wx.showToast({ title: '比赛前6小时不能请假/待定', icon: 'none', duration: 2000 })
+      return
+    }
 
     if (!hasUserInfo) {
       wx.showToast({ title: '请先登录', icon: 'none' })
@@ -860,17 +949,14 @@ Page({
     const nickName = userInfo.nickName
     const avatarUrl = userInfo.avatarUrl || ''
     
-    // console.log('nickName:', nickName)
-    // console.log('avatarUrl:', avatarUrl)
-    
     // 先从所有列表中移除当前用户
     const updatedSignups = that.data.signups.filter(u => u.nickName !== nickName)
     const updatedPending = that.data.pendingList.filter(u => u.nickName !== nickName)
     const updatedLeave = that.data.leaveList.filter(u => u.nickName !== nickName)
-    
-    // console.log('移除前 signups 长度:', that.data.signups.length)
-    // console.log('移除后 signups 长度:', updatedSignups.length)
-    
+
+    // 取消该用户的分队分配
+    that.removePlayerFromTeam(nickName)
+
     // 获取用户openId作为userId
     wx.cloud.callFunction({
       name: 'getOpenId',
@@ -957,6 +1043,12 @@ Page({
     const that = this
     const { hasUserInfo, currentStatus } = this.data
 
+    // 6小时限制检查
+    if (this.isWithin6Hours()) {
+      wx.showToast({ title: '比赛前6小时不能请假/待定', icon: 'none', duration: 2000 })
+      return
+    }
+
     if (!hasUserInfo) {
       wx.showToast({ title: '请先登录', icon: 'none' })
       return
@@ -974,6 +1066,9 @@ Page({
     const updatedSignups = that.data.signups.filter(u => u.nickName !== nickName)
     const updatedPending = that.data.pendingList.filter(u => u.nickName !== nickName)
     const updatedLeave = that.data.leaveList.filter(u => u.nickName !== nickName)
+
+    // 取消该用户的分队分配
+    that.removePlayerFromTeam(nickName)
     
     // 获取用户openId作为userId
     wx.cloud.callFunction({
