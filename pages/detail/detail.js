@@ -35,6 +35,7 @@ Page({
     selectedPlayer: null,
     newTeamName: '',
     editingTeamIndex: -1,
+    isSharingTeams: false,
     // 评论相关
     comments: [],
     commentInput: '',
@@ -496,15 +497,63 @@ Page({
     return text
   },
 
-  // 分享分队到群聊
-  shareTeamAssignments: function() {
-    const text = this.generateTeamShareText()
-    wx.setClipboardData({
-      data: text,
-      success: function() {
-        wx.showToast({ title: '分队信息已复制', icon: 'success' })
+  // 点击分享分队按钮，设置标志位
+  onShareTeamsTap: function() {
+    this.setData({ isSharingTeams: true })
+  },
+
+  // 微信分享：转发到群/好友
+  onShareAppMessage: function(res) {
+    const that = this
+    const { activity, teamPlayersList, isSharingTeams } = this.data
+    const activityId = activity.id || activity._id || ''
+
+    if (isSharingTeams) {
+      // 分享分队信息
+      let title = (activity.title || '活动') + ' 分队：'
+      teamPlayersList.forEach(team => {
+        title += team.teamName + team.players.length + '人 '
+      })
+
+      that.setData({ isSharingTeams: false })
+
+      return {
+        title: title,
+        path: '/pages/detail/detail?id=' + activityId + '&from=share',
+        imageUrl: ''
       }
-    })
+    }
+
+    // 默认分享活动
+    return {
+      title: activity.title || '球队活动',
+      path: '/pages/detail/detail?id=' + activityId + '&from=share'
+    }
+  },
+
+  // 分享到朋友圈
+  onShareTimeline: function() {
+    const { activity, teamPlayersList, isSharingTeams } = this.data
+    const activityId = activity.id || activity._id || ''
+
+    if (isSharingTeams) {
+      let title = (activity.title || '活动') + ' 分队：'
+      teamPlayersList.forEach(team => {
+        title += team.teamName + team.players.length + '人 '
+      })
+
+      this.setData({ isSharingTeams: false })
+
+      return {
+        title: title,
+        query: 'id=' + activityId + '&from=share'
+      }
+    }
+
+    return {
+      title: activity.title || '球队活动',
+      query: 'id=' + activityId + '&from=share'
+    }
   },
 
   // ========== 原函数 ==========
