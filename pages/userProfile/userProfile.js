@@ -143,7 +143,10 @@ Page({
         let avatarUrl = (userData.avatarUrl && userData.avatarUrl.trim()) || (userInfo && userInfo.avatarUrl) || ''
         
         // 如果查到的记录缺少关键字段，尝试按 nickName 查最新记录
-        const hasKeyData = userData.phone || userData.position || userData.jerseyNumber || userData.avatarUrl
+        const hasKeyData = (userData.phone && userData.phone.toString().trim()) || 
+                           (userData.position && userData.position.toString().trim()) || 
+                           (userData.jerseyNumber && userData.jerseyNumber.toString().trim()) || 
+                           (userData.avatarUrl && userData.avatarUrl.toString().trim())
         if (!hasKeyData && userData.nickName) {
           that.loadUserInfoByNickName(userData.nickName, callback)
           return
@@ -189,7 +192,8 @@ Page({
         if (callback) callback()
       },
       fail: function() {
-        that.loadUserInfoByNickName(userId, callback)
+        const nickName = (userInfo && userInfo.nickName) || userId
+        that.loadUserInfoByNickName(nickName, callback)
       }
     })
   },
