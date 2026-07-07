@@ -60,7 +60,7 @@
 
 .action-btn.expense {
   background-color: #f5f5f5;
-  color: #666;
+  color: #2c3e50;
 }
 
 .records-card {
@@ -80,12 +80,12 @@
 .card-title {
   font-size: 32rpx;
   font-weight: bold;
-  color: #1f2937;
+  color: #2c3e50;
 }
 
 .record-count {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: #2c3e50;
 }
 
 .records-list {
@@ -123,7 +123,7 @@
 
 .record-icon.expense {
   background-color: #f5f5f5;
-  color: #999;
+  color: #2c3e50;
 }
 
 .record-info {
@@ -134,13 +134,13 @@
 
 .record-title {
   font-size: 28rpx;
-  color: #1f2937;
+  color: #2c3e50;
   margin-bottom: 8rpx;
 }
 
 .record-time {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: #2c3e50;
 }
 
 .record-amount {
@@ -177,7 +177,7 @@
 
 .record-actions .action-btn.edit {
   background-color: #f5f5f5;
-  color: #666;
+  color: #2c3e50;
 }
 
 .record-actions .action-btn.delete {
@@ -194,7 +194,7 @@
 .tips-header {
   font-size: 26rpx;
   font-weight: 700;
-  color: #666;
+  color: #2c3e50;
   margin-bottom: 16rpx;
 }
 
@@ -226,7 +226,7 @@
 
 .tip-item text {
   font-size: 24rpx;
-  color: #888;
+  color: #2c3e50;
 }
 
 .empty-state {
@@ -257,7 +257,7 @@
 .stats-title {
   font-size: 28rpx;
   font-weight: bold;
-  color: #1f2937;
+  color: #2c3e50;
 }
 
 .stats-content {
@@ -273,7 +273,7 @@
 
 .stat-label {
   font-size: 26rpx;
-  color: #6b7280;
+  color: #2c3e50;
 }
 
 .stat-value {
@@ -312,7 +312,7 @@
 .timeline-title {
   font-size: 26rpx;
   font-weight: bold;
-  color: #374151;
+  color: #2c3e50;
 }
 
 .timeline-list {
@@ -364,7 +364,7 @@
 .timeline-title-text {
   font-size: 28rpx;
   font-weight: bold;
-  color: #1f2937;
+  color: #2c3e50;
 }
 
 .timeline-amount {
@@ -382,12 +382,12 @@
 
 .timeline-time {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: #2c3e50;
 }
 
 .empty-text {
   font-size: 28rpx;
-  color: #9ca3af;
+  color: #2c3e50;
 }
 
 .modal {
@@ -413,7 +413,7 @@
 .modal-title {
   font-size: 32rpx;
   font-weight: bold;
-  color: #1f2937;
+  color: #2c3e50;
   text-align: center;
   margin-bottom: 40rpx;
 }
@@ -425,7 +425,7 @@
 .form-label {
   display: block;
   font-size: 28rpx;
-  color: #374151;
+  color: #2c3e50;
   margin-bottom: 12rpx;
 }
 
@@ -448,7 +448,7 @@
 
 .quick-title {
   font-size: 26rpx;
-  color: #666;
+  color: #2c3e50;
   margin-bottom: 16rpx;
   display: block;
 }
@@ -465,7 +465,7 @@
   border: 1rpx solid #e0e0e0;
   border-radius: 8rpx;
   font-size: 24rpx;
-  color: #333;
+  color: #2c3e50;
 }
 
 .quick-btn::after {
@@ -488,7 +488,7 @@
 
 .modal-btn.cancel {
   background-color: #f3f4f6;
-  color: #6b7280;
+  color: #2c3e50;
 }
 
 .modal-btn.confirm {
@@ -499,7 +499,7 @@
 /* 放鸽子管理按钮 */
 .action-btn.dove {
   background-color: #f5f5f5;
-  color: #666;
+  color: #2c3e50;
 }
 
 /* 活动列表 */
@@ -529,13 +529,13 @@
 
 .activity-title {
   font-size: 28rpx;
-  color: #374151;
+  color: #2c3e50;
   font-weight: 500;
 }
 
 .activity-date {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: #2c3e50;
 }
 
 .activity-item.selected {
@@ -627,7 +627,7 @@
 
 .signup-name {
   font-size: 20rpx;
-  color: #6b7280;
+  color: #2c3e50;
   text-align: center;
   max-width: 100%;
   overflow: hidden;
@@ -666,7 +666,7 @@
   border: 1px solid #d1d5db;
   border-radius: 20rpx;
   font-size: 24rpx;
-  color: #374151;
+  color: #2c3e50;
   min-width: 160rpx;
   text-align: center;
 }
@@ -693,7 +693,7 @@
   border: 1px solid #d1d5db;
   border-radius: 20rpx;
   font-size: 24rpx;
-  color: #374151;
+  color: #2c3e50;
   min-width: 160rpx;
 }
 

@@ -9,6 +9,7 @@ Page({
     isSuperAdmin: true,
     formData: {
       number: '',
+      phone: '',
       position: '',
       size: ''
     },
@@ -200,6 +201,7 @@ Page({
           that.setData({
             formData: {
               number: userData.number || '',
+              phone: userData.phone || '',
               position: userData.position || '',
               size: userData.size || ''
             }
@@ -706,6 +708,13 @@ Page({
         icon: 'none'
       })
     }
+  },
+
+  onPhoneInput: function(e) {
+    const value = e.detail.value
+    this.setData({
+      'formData.phone': value
+    })
   },
 
   onNumberInput: function(e) {

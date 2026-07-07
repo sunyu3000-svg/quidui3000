@@ -9,10 +9,11 @@ Page({
       wechatName: '',
       registerTime: '',
       position: '',
-      jerseyNumber: ''
+      jerseyNumber: '',
+      phone: ''
     },
     myInfo: {},
-    isLiked: false,
+    isAdmin: false,
     myImpression: '',
     stats: {
       joinCount: 0,
@@ -70,7 +71,8 @@ Page({
             wechatName: decodeURIComponent(options.nickName) || '默认昵称',
             registerTime: '',
             position: '',
-            jerseyNumber: ''
+            jerseyNumber: '',
+            phone: ''
           }
         })
       } else {
@@ -81,7 +83,8 @@ Page({
             wechatName: '默认昵称',
             registerTime: '',
             position: '',
-            jerseyNumber: ''
+            jerseyNumber: '',
+            phone: ''
           }
         })
       }
@@ -107,10 +110,12 @@ Page({
         db.collection('users').doc(openId).get({
           success: function(res) {
             that.setData({ myInfo: { ...res.data, openId: openId } })
+            that.checkAdmin()
             that.loadUserInfo()
           },
           fail: function(err) {
             that.setData({ myInfo: { openId: openId, nickName: '用户' } })
+            that.checkAdmin()
             that.loadUserInfo()
           }
         })
@@ -121,6 +126,7 @@ Page({
           icon: 'none'
         })
         that.setData({ myInfo: { openId: '', nickName: '用户' } })
+        that.checkAdmin()
         that.loadUserInfo()
       }
     })
@@ -140,17 +146,18 @@ Page({
         if (!avatarUrl && userData.nickName) {
           that.fetchAvatarFromSignups(userData.nickName, function(fetchedAvatar) {
             avatarUrl = fetchedAvatar || avatarUrl
-            that.setData({
-              userId: newUserId,
-              userInfo: {
-                nickName: userData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
-                avatarUrl: avatarUrl,
-                wechatName: userData.wechatName || (userInfo && userInfo.nickName) || '默认昵称',
-                registerTime: userData.registerTime || '',
-                position: userData.position || '',
-                jerseyNumber: userData.jerseyNumber || ''
-              }
-            })
+                that.setData({
+                  userId: newUserId,
+                  userInfo: {
+                    nickName: userData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
+                    avatarUrl: avatarUrl,
+                    wechatName: userData.wechatName || (userInfo && userInfo.nickName) || '默认昵称',
+                    registerTime: userData.registerTime || '',
+                    position: userData.position || '',
+                    jerseyNumber: userData.jerseyNumber || '',
+                    phone: userData.phone || ''
+                  }
+                })
             that.loadRemarkName()
             that.loadAllStats(newUserId)
             if (callback) callback()
@@ -166,7 +173,8 @@ Page({
             wechatName: userData.wechatName || (userInfo && userInfo.nickName) || '默认昵称',
             registerTime: userData.registerTime || '',
             position: userData.position || '',
-            jerseyNumber: userData.jerseyNumber || ''
+            jerseyNumber: userData.jerseyNumber || '',
+            phone: userData.phone || ''
           }
         })
         that.loadRemarkName()
@@ -286,7 +294,8 @@ Page({
                   wechatName: userData.wechatName || (userInfo && userInfo.nickName) || '默认昵称',
                   registerTime: userData.registerTime || '',
                   position: userData.position || '',
-                  jerseyNumber: userData.jerseyNumber || ''
+                  jerseyNumber: userData.jerseyNumber || '',
+                  phone: userData.phone || ''
                 }
               })
               that.loadRemarkName()
@@ -304,7 +313,8 @@ Page({
               wechatName: userData.wechatName || (userInfo && userInfo.nickName) || '默认昵称',
               registerTime: userData.registerTime || '',
               position: userData.position || '',
-              jerseyNumber: userData.jerseyNumber || ''
+              jerseyNumber: userData.jerseyNumber || '',
+              phone: userData.phone || ''
             }
           })
           that.loadRemarkName()
@@ -325,7 +335,8 @@ Page({
                   wechatName: '默认昵称',
                   registerTime: '',
                   position: '',
-                  jerseyNumber: ''
+                  jerseyNumber: '',
+                  phone: ''
                 }
               })
             }
@@ -368,7 +379,8 @@ Page({
                   wechatName: signupData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
                   registerTime: '',
                   position: '',
-                  jerseyNumber: ''
+                  jerseyNumber: '',
+                  phone: ''
                 }
               })
               that.loadRemarkName()
@@ -386,7 +398,8 @@ Page({
               wechatName: signupData.nickName || (userInfo && userInfo.nickName) || '默认昵称',
               registerTime: '',
               position: '',
-              jerseyNumber: ''
+              jerseyNumber: '',
+              phone: ''
             }
           })
         } else {
@@ -398,7 +411,8 @@ Page({
                 wechatName: '默认昵称',
                 registerTime: '',
                 position: '',
-                jerseyNumber: ''
+                jerseyNumber: '',
+                phone: ''
               }
             })
           }
@@ -416,7 +430,8 @@ Page({
               wechatName: '默认昵称',
               registerTime: '',
               position: '',
-              jerseyNumber: ''
+              jerseyNumber: '',
+              phone: ''
             }
           })
         }
@@ -905,6 +920,23 @@ Page({
       },
       fail: function() {
         wx.showToast({ title: '删除失败', icon: 'none' })
+      }
+    })
+  },
+
+  checkAdmin: function() {
+    const that = this
+    const { myInfo } = this.data
+    if (!myInfo || !myInfo.openId) {
+      this.setData({ isAdmin: false })
+      return
+    }
+    db.collection('admins').where({ _openid: myInfo.openId }).get({
+      success: function(res) {
+        that.setData({ isAdmin: res.data.length > 0 })
+      },
+      fail: function() {
+        that.setData({ isAdmin: false })
       }
     })
   }

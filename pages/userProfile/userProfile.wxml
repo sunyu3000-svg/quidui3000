@@ -11,9 +11,6 @@
       <view wx:else class="user-avatar default-avatar">
         <text class="avatar-text">{{userInfo.nickName ? userInfo.nickName.charAt(0) : '?'}}</text>
       </view>
-      <button class="share-btn" open-type="share">
-        <text class="share-text">分享</text>
-      </button>
     </view>
     
     <view class="user-names">
@@ -29,6 +26,10 @@
       <view class="name-row" wx:if="{{userInfo.jerseyNumber}}">
         <text class="label">球衣号码：</text>
         <text class="value">{{userInfo.jerseyNumber}}</text>
+      </view>
+      <view class="name-row" wx:if="{{isAdmin && userInfo.phone}}">
+        <text class="label">电话号码：</text>
+        <text class="value">{{userInfo.phone}}</text>
       </view>
       <view class="name-row remark-row" bindtap="setRemark">
         <text class="label">备注名：</text>

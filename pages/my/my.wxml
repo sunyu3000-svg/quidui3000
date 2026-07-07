@@ -69,7 +69,10 @@
               <view wx:else class="user-avatar-placeholder">
                 <text>{{item.nickName ? item.nickName.charAt(0) : '用'}}</text>
               </view>
-              <text class="user-name">{{item.nickName || '未知用户'}}</text>
+              <view class="user-info-col">
+                <text class="user-name">{{item.nickName || '未知用户'}}</text>
+                <text class="user-phone" wx:if="{{item.phone}}">{{item.phone}}</text>
+              </view>
             </view>
           </scroll-view>
           <view class="modal-buttons">
@@ -95,7 +98,12 @@
     <view wx:else>
       <view class="form-item">
         <text class="form-label">球衣号码</text>
-        <input class="form-input" type="number" placeholder="请输入球衣号码" value="{{formData.number}}" bindinput="onNumberInput" />
+        <input class="form-input" type="number" placeholder="请输入球衣号码" placeholder-class="input-placeholder" value="{{formData.number}}" bindinput="onNumberInput" />
+      </view>
+      
+      <view class="form-item">
+        <text class="form-label">手机号码</text>
+        <input class="form-input" type="number" placeholder="请输入手机号码" placeholder-class="input-placeholder" value="{{formData.phone}}" bindinput="onPhoneInput" />
       </view>
       
       <view class="form-item">
@@ -152,14 +160,14 @@
 
   <!-- 活动归集 -->
   <view class="section archive-section" wx:if="{{isAdmin || isSuperAdmin}}">
-    <view class="section-header">
-      <text class="section-title">活动归集</text>
+    <view class="archive-header">
+      <text class="archive-title">活动归集</text>
+      <view class="archive-actions">
+        <button class="archive-btn history" bindtap="loadSeasons">历史归集</button>
+        <button class="archive-btn primary" bindtap="showArchiveModal" wx:if="{{isSuperAdmin}}">新建归集</button>
+      </view>
     </view>
-    <view class="archive-actions">
-      <button class="archive-btn primary" bindtap="showArchiveModal" wx:if="{{isSuperAdmin}}">新建归集</button>
-      <button class="archive-btn" bindtap="loadSeasons">历史归集</button>
-    </view>
-    <text class="archive-desc">归集后所有活动数据将保存为历史赛季，当前数据清空重新开始</text>
+    <text class="archive-desc">归集后活动数据将保存为历史赛季，当前数据清零重新开始</text>
   </view>
 
   <!-- 归集弹窗 -->

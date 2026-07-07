@@ -35,6 +35,14 @@
   background: none;
   border: none;
   padding: 0;
+  width: 160rpx;
+  height: 160rpx;
+  font-size: 0;
+  color: transparent;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .avatar-btn::after {
@@ -49,7 +57,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16rpx;
   overflow: hidden;
 }
 
@@ -165,21 +172,26 @@
 
 .form-label {
   font-size: 28rpx;
-  color: #666;
+  color: #2c3e50;
 }
 
 .form-input {
   font-size: 28rpx;
-  color: #333;
+  color: #2c3e50;
   text-align: right;
 }
 
 .picker-content {
   font-size: 28rpx;
+  color: #2c3e50;
+}
+
+.input-placeholder {
+  color: #2c3e50;
 }
 
 .placeholder {
-  color: #ccc;
+  color: #2c3e50;
 }
 
 .save-btn {
@@ -199,32 +211,38 @@
 
 /* ===== 管理员区域 ===== */
 .admin-section {
-  background: #ffffff;
+  background: white;
   border-radius: 16rpx;
-  padding: 32rpx;
+  margin: 0 32rpx 20rpx;
+  padding: 28rpx 28rpx 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
 }
 
 .admin-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24rpx;
+  margin-bottom: 16rpx;
 }
 
 .admin-title {
   font-size: 30rpx;
-  font-weight: 700;
+  font-weight: 600;
   color: #2c3e50;
 }
 
 .add-admin-btn {
-  height: 60rpx;
-  padding: 0 24rpx;
+  height: 56rpx;
+  padding: 0 22rpx;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: #dc2626;
-  color: #ffffff;
-  border-radius: 8rpx;
-  font-size: 26rpx;
-  line-height: 60rpx;
+  color: white;
+  line-height: 56rpx;
 }
 
 .add-admin-btn::after {
@@ -250,7 +268,7 @@
 
 .cannot-delete {
   font-size: 22rpx;
-  color: #ccc;
+  color: #2c3e50;
 }
 
 .admin-info {
@@ -260,12 +278,12 @@
 
 .admin-name {
   font-size: 28rpx;
-  color: #333;
+  color: #2c3e50;
 }
 
 .admin-role {
   font-size: 22rpx;
-  color: #999;
+  color: #2c3e50;
   margin-top: 2rpx;
 }
 
@@ -273,7 +291,7 @@
   height: 52rpx;
   padding: 0 20rpx;
   background: #f5f5f5;
-  color: #999;
+  color: #2c3e50;
   border-radius: 8rpx;
   font-size: 24rpx;
   line-height: 52rpx;
@@ -287,7 +305,7 @@
   padding: 32rpx;
   text-align: center;
   font-size: 26rpx;
-  color: #999;
+  color: #2c3e50;
 }
 
 .admin-tips {
@@ -302,7 +320,7 @@
   align-items: center;
   font-size: 26rpx;
   font-weight: 700;
-  color: #666;
+  color: #2c3e50;
   margin-bottom: 12rpx;
 }
 
@@ -314,7 +332,7 @@
   display: flex;
   align-items: center;
   font-size: 24rpx;
-  color: #888;
+  color: #2c3e50;
   margin-bottom: 6rpx;
 }
 
@@ -390,7 +408,7 @@
 
 .modal-btn.cancel-btn {
   background: #f5f5f5;
-  color: #666;
+  color: #2c3e50;
 }
 
 .modal-btn.confirm-btn {
@@ -421,6 +439,25 @@
   border-radius: 10rpx;
 }
 
+.user-info-col {
+  display: flex;
+  flex-direction: column;
+  margin-left: 16rpx;
+  flex: 1;
+}
+
+.user-item .user-name {
+  font-size: 28rpx;
+  color: #2c3e50;
+  text-align: left;
+}
+
+.user-phone {
+  font-size: 22rpx;
+  color: #2c3e50;
+  margin-top: 4rpx;
+}
+
 .user-item:active {
   background: #f5f5f5;
 }
@@ -445,13 +482,7 @@
 
 .user-avatar-placeholder text {
   font-size: 26rpx;
-  color: #999;
-}
-
-.user-item .user-name {
-  font-size: 28rpx;
-  color: #333;
-  text-align: left;
+  color: #2c3e50;
 }
 
 /* ========== 活动归集 ========== */
@@ -460,15 +491,18 @@
   background: white;
   border-radius: 16rpx;
   margin: 0 32rpx 20rpx;
-  padding: 28rpx;
+  padding: 28rpx 28rpx 24rpx;
   box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
 }
 
-.section-header {
-  margin-bottom: 20rpx;
+.archive-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
 }
 
-.section-title {
+.archive-title {
   font-size: 30rpx;
   font-weight: 600;
   color: #2c3e50;
@@ -476,24 +510,30 @@
 
 .archive-actions {
   display: flex;
-  gap: 20rpx;
+  gap: 12rpx;
+  align-items: center;
 }
 
 .archive-btn {
-  flex: 1;
-  height: 76rpx;
-  background: #f0f2f5;
-  color: #2c3e50;
-  border-radius: 40rpx;
-  font-size: 26rpx;
+  height: 56rpx;
+  padding: 0 22rpx;
+  border-radius: 12rpx;
+  font-size: 24rpx;
   font-weight: 400;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #f5f5f5;
+  color: #2c3e50;
 }
 
 .archive-btn::after {
   border: none;
+}
+
+.archive-btn.history {
+  background: #f0f2f5;
+  color: #2c3e50;
 }
 
 .archive-btn.primary {
@@ -503,10 +543,8 @@
 }
 
 .archive-desc {
-  display: block;
-  margin-top: 20rpx;
   font-size: 22rpx;
-  color: #999;
+  color: #2c3e50;
   line-height: 1.5;
 }
 
@@ -522,7 +560,7 @@
 .archive-form-label {
   display: block;
   font-size: 28rpx;
-  color: #666;
+  color: #2c3e50;
   margin-bottom: 12rpx;
 }
 
@@ -560,7 +598,7 @@
 .seasons-empty {
   padding: 60rpx 0;
   text-align: center;
-  color: #999;
+  color: #2c3e50;
   font-size: 26rpx;
 }
 
@@ -583,13 +621,13 @@
   display: block;
   font-size: 28rpx;
   font-weight: 500;
-  color: #333;
+  color: #2c3e50;
 }
 
 .season-date {
   display: block;
   font-size: 22rpx;
-  color: #999;
+  color: #2c3e50;
   margin-top: 4rpx;
 }
 
@@ -601,7 +639,7 @@
 
 .season-stat {
   font-size: 24rpx;
-  color: #666;
+  color: #2c3e50;
   background: #f0f2f5;
   padding: 6rpx 16rpx;
   border-radius: 20rpx;
@@ -615,7 +653,7 @@
 
 .season-arrow {
   font-size: 36rpx;
-  color: #ccc;
+  color: #2c3e50;
 }
 
 .season-delete {
@@ -633,7 +671,7 @@
 .season-detail-date {
   text-align: center;
   font-size: 24rpx;
-  color: #999;
+  color: #2c3e50;
   margin-bottom: 24rpx;
 }
 
@@ -661,7 +699,7 @@
 
 .sds-label {
   font-size: 22rpx;
-  color: #999;
+  color: #2c3e50;
   margin-top: 4rpx;
 }
 
@@ -679,7 +717,7 @@
 .detail-section-title {
   font-size: 26rpx;
   font-weight: 600;
-  color: #333;
+  color: #2c3e50;
   margin-bottom: 12rpx;
   display: block;
 }
@@ -731,7 +769,7 @@
   justify-content: center;
   border-radius: 50%;
   margin-right: 16rpx;
-  color: #666;
+  color: #2c3e50;
   background: #f0f2f5;
 }
 
@@ -758,12 +796,12 @@
 .detail-player-name {
   flex: 1;
   font-size: 26rpx;
-  color: #333;
+  color: #2c3e50;
 }
 
 .detail-player-count {
   font-size: 24rpx;
-  color: #666;
+  color: #2c3e50;
 }
 
 .detail-player-count.dove-count {
@@ -798,23 +836,23 @@
 
 .da-num {
   font-size: 22rpx;
-  color: #999;
+  color: #2c3e50;
   width: 36rpx;
   text-align: center;
 }
 
 .da-title {
   font-size: 26rpx;
-  color: #333;
+  color: #2c3e50;
 }
 
 .da-date {
   font-size: 22rpx;
-  color: #999;
+  color: #2c3e50;
 }
 
 .da-count {
   font-size: 24rpx;
-  color: #666;
+  color: #2c3e50;
   white-space: nowrap;
 }
