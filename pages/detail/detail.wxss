@@ -150,6 +150,251 @@
   margin-right: 12rpx;
 }
 
+/* ===== 分队区域 ===== */
+.teams-section {
+  background-color: #ffffff;
+  margin: 0 20rpx 16rpx;
+  border-radius: 12rpx;
+  padding: 24rpx;
+}
+
+.teams-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.teams-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.teams-actions {
+  display: flex;
+  gap: 12rpx;
+}
+
+.team-action-btn {
+  font-size: 24rpx;
+  color: #dc2626;
+  padding: 6rpx 16rpx;
+  border: 1rpx solid #dc2626;
+  border-radius: 8rpx;
+}
+
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.team-card {
+  border: 1rpx solid #f0f0f0;
+  border-radius: 12rpx;
+  padding: 16rpx;
+  background-color: #fafafa;
+}
+
+.unassigned-card {
+  background-color: #f5f5f5;
+  border-style: dashed;
+}
+
+.team-header-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.team-color-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  margin-right: 8rpx;
+  flex-shrink: 0;
+}
+
+.team-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #2c3e50;
+  flex: 1;
+}
+
+.team-count {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.team-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.team-player-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: calc(20% - 13rpx);
+}
+
+.team-avatar-wrapper {
+  position: relative;
+  margin-bottom: 4rpx;
+}
+
+.team-player-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  border: 2rpx solid #e0e0e0;
+}
+
+.team-player-avatar.default-avatar {
+  background: #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-avatar-text {
+  font-size: 24rpx;
+  color: #999;
+  font-weight: 600;
+}
+
+.team-player-name {
+  font-size: 20rpx;
+  color: #2c3e50;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.team-empty {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 20rpx 0;
+}
+
+.team-empty-text {
+  font-size: 22rpx;
+  color: #bbb;
+}
+
+/* ===== 队伍选择弹窗 ===== */
+.team-picker {
+  padding: 32rpx 24rpx;
+}
+
+.team-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.team-picker-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 20rpx;
+  border-radius: 8rpx;
+  background: #f7f7f8;
+}
+
+.team-picker-item:active {
+  background: #e8e8e8;
+}
+
+.team-picker-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  margin-right: 12rpx;
+  flex-shrink: 0;
+}
+
+.team-picker-name {
+  font-size: 28rpx;
+  color: #2c3e50;
+}
+
+/* ===== 队伍管理弹窗 ===== */
+.team-manager {
+  padding: 32rpx 24rpx;
+}
+
+.team-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  margin-bottom: 20rpx;
+  max-height: 400rpx;
+  overflow-y: auto;
+}
+
+.team-manager-item {
+  display: flex;
+  align-items: center;
+  padding: 14rpx 16rpx;
+  border-radius: 8rpx;
+  background: #f7f7f8;
+}
+
+.team-manager-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  margin-right: 10rpx;
+  flex-shrink: 0;
+}
+
+.team-manager-name {
+  font-size: 26rpx;
+  color: #2c3e50;
+  flex: 1;
+  text-align: left;
+}
+
+.team-manager-delete {
+  font-size: 24rpx;
+  color: #dc2626;
+}
+
+.team-add-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.team-add-input {
+  flex: 1;
+  height: 64rpx;
+  background: #f5f5f5;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  font-size: 26rpx;
+  color: #333;
+}
+
+.team-add-btn {
+  font-size: 26rpx;
+  color: #dc2626;
+  font-weight: 600;
+  padding: 10rpx 20rpx;
+  border: 1rpx solid #dc2626;
+  border-radius: 8rpx;
+}
+
 /* ===== 描述卡片 ===== */
 .desc-card {
   background-color: #ffffff;

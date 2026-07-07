@@ -20,6 +20,21 @@ Page({
     loading: false,
     lastLoadTime: 0,
     isOrganizer: false,
+    isAdmin: false,
+    // 分队相关
+    teams: [
+      { name: '红队', color: '#ef4444' },
+      { name: '绿队', color: '#22c55e' },
+      { name: '蓝队', color: '#3b82f6' }
+    ],
+    teamAssignments: {},
+    teamPlayersList: [],
+    unassignedPlayers: [],
+    showTeamManager: false,
+    showTeamPicker: false,
+    selectedPlayer: null,
+    newTeamName: '',
+    editingTeamIndex: -1,
     // 评论相关
     comments: [],
     commentInput: '',
@@ -66,12 +81,14 @@ Page({
     if (options && options.id) {
       this.loadActivity(options.id, () => {
         this.loadSignups()
+        this.loadTeamAssignments()
       })
     } else {
       this.loadSignups()
     }
     
     this.loadUserInfo()
+    this.checkAdmin()
   },
 
   loadActivity: function(activityId, callback) {
@@ -309,6 +326,7 @@ Page({
                   loading: false,
                   lastLoadTime: Date.now()
                 })
+                that.updateTeamPlayers()
                 // 加载评论
                 that.loadComments()
               })
@@ -347,6 +365,7 @@ Page({
                       loading: false,
                       lastLoadTime: Date.now()
                     })
+                    that.updateTeamPlayers()
                     that.loadComments()
                   })
                 },
@@ -361,6 +380,7 @@ Page({
                       loading: false,
                       lastLoadTime: Date.now()
                     })
+                    that.updateTeamPlayers()
                     that.loadComments()
                   })
                 }
@@ -378,6 +398,7 @@ Page({
               loading: false,
               lastLoadTime: Date.now()
             })
+            that.updateTeamPlayers()
             // 加载评论
             that.loadComments()
           })
@@ -1342,5 +1363,331 @@ Page({
     const month = date.getMonth() + 1
     const dayNum = date.getDate()
     return month + '月' + dayNum + '日'
+  },
+
+  // ========== 分队功能 ==========
+
+  // 检查管理员权限（调用 getOpenId 后查询 admins 集合）
+  checkAdmin: function() {
+    const that = this
+    wx.cloud.callFunction({
+      name: 'getOpenId',
+      success: function(res) {
+        const openId = res.result.openid
+        db.collection('admins').where({ openId: openId }).get({
+          success: function(adminRes) {
+            if (adminRes.data.length > 0) {
+              that.setData({ isAdmin: true })
+            } else {
+              that.setData({ isAdmin: false })
+            }
+          },
+          fail: function() {
+            that.setData({ isAdmin: false })
+          }
+        })
+      },
+      fail: function() {
+        that.setData({ isAdmin: false })
+      }
+    })
+  },
+
+  // 加载分队数据
+  loadTeamAssignments: function() {
+    const that = this
+    const activityId = that.data.activity._id || that.data.activity.id
+    if (!activityId) return
+
+    db.collection('activities').doc(activityId).get({
+      success: function(res) {
+        const data = res.data || {}
+        // 加载队伍配置（如果有保存的话）
+        if (data.teams && data.teams.length > 0) {
+          that.setData({ teams: data.teams })
+        }
+        // 加载分队分配
+        if (data.teamAssignments) {
+          that.setData({ teamAssignments: data.teamAssignments })
+        }
+        that.updateTeamPlayers()
+      },
+      fail: function() {
+        // 静默失败，使用默认配置
+      }
+    })
+  },
+
+  // 获取某队伍的球员列表
+  getTeamPlayers: function(teamIndex) {
+    const { signups, teamAssignments } = this.data
+    return signups.filter(s => {
+      const key = s.userId || s.nickName
+      return teamAssignments[key] === teamIndex
+    })
+  },
+
+  // 获取未分配的球员
+  getUnassignedPlayers: function() {
+    const { signups, teamAssignments } = this.data
+    return signups.filter(s => {
+      const key = s.userId || s.nickName
+      return teamAssignments[key] === undefined || teamAssignments[key] === -1
+    })
+  },
+
+  // 点击球员头像切换队伍（循环：0→1→2→-1→0）
+  onTeamPlayerTap: function(e) {
+    const { isAdmin, activity } = this.data
+    if (!isAdmin) return
+    if (activity.activityType !== '踢球' && activity.title !== '踢球') return
+
+    const player = e.currentTarget.dataset.player
+    if (!player) return
+
+    const key = player.userId || player.nickName
+    const { teams, teamAssignments } = this.data
+    let currentTeam = teamAssignments[key]
+    if (currentTeam === undefined) currentTeam = -1
+
+    // 循环到下一个队伍
+    let nextTeam = currentTeam + 1
+    if (nextTeam >= teams.length) nextTeam = -1
+
+    const newAssignments = { ...teamAssignments, [key]: nextTeam }
+    this.setData({ teamAssignments: newAssignments })
+    this.updateTeamPlayers()
+
+    // 自动保存
+    this.saveTeamAssignments()
+  },
+
+  // 长按球员头像，显示队伍选择弹窗
+  onTeamPlayerLongPress: function(e) {
+    const { isAdmin, activity } = this.data
+    if (!isAdmin) return
+    if (activity.activityType !== '踢球' && activity.title !== '踢球') return
+
+    const player = e.currentTarget.dataset.player
+    if (!player) return
+
+    this.setData({
+      selectedPlayer: player,
+      showTeamPicker: true
+    })
+  },
+
+  // 隐藏队伍选择弹窗
+  hideTeamPicker: function() {
+    this.setData({
+      showTeamPicker: false,
+      selectedPlayer: null
+    })
+  },
+
+  // 将球员分配到指定队伍
+  assignToTeam: function(e) {
+    const teamIndex = parseInt(e.currentTarget.dataset.index)
+    const { selectedPlayer, teamAssignments } = this.data
+    if (!selectedPlayer) return
+
+    const key = selectedPlayer.userId || selectedPlayer.nickName
+    const newAssignments = { ...teamAssignments }
+    if (teamIndex === -1) {
+      delete newAssignments[key]
+    } else {
+      newAssignments[key] = teamIndex
+    }
+
+    this.setData({
+      teamAssignments: newAssignments,
+      showTeamPicker: false,
+      selectedPlayer: null
+    })
+    this.updateTeamPlayers()
+
+    // 自动保存
+    this.saveTeamAssignments()
+  },
+
+  // 显示队伍管理弹窗
+  showTeamManager: function() {
+    if (!this.data.isAdmin) return
+    this.setData({ showTeamManager: true })
+  },
+
+  // 隐藏队伍管理弹窗
+  hideTeamManager: function() {
+    this.setData({
+      showTeamManager: false,
+      newTeamName: '',
+      editingTeamIndex: -1
+    })
+  },
+
+  // 添加新队伍
+  addTeam: function() {
+    const { newTeamName, teams } = this.data
+    const name = newTeamName.trim()
+    if (!name) {
+      wx.showToast({ title: '请输入队伍名称', icon: 'none' })
+      return
+    }
+
+    const colors = ['#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#6366f1']
+    const color = colors[teams.length % colors.length]
+
+    const newTeams = [...teams, { name: name, color: color }]
+    this.setData({
+      teams: newTeams,
+      newTeamName: ''
+    })
+
+    // 保存队伍配置
+    this.saveTeamConfig()
+  },
+
+  // 删除队伍
+  removeTeam: function(e) {
+    const index = parseInt(e.currentTarget.dataset.index)
+    const { teams, teamAssignments } = this.data
+    if (teams.length <= 1) {
+      wx.showToast({ title: '至少保留1个队伍', icon: 'none' })
+      return
+    }
+
+    const newTeams = teams.filter((_, i) => i !== index)
+
+    // 将被删除队伍的球员标记为未分配
+    const newAssignments = {}
+    for (const key in teamAssignments) {
+      if (teamAssignments[key] === index) {
+        // 删除该分配
+        continue
+      } else if (teamAssignments[key] > index) {
+        // 后面的队伍索引减1
+        newAssignments[key] = teamAssignments[key] - 1
+      } else {
+        newAssignments[key] = teamAssignments[key]
+      }
+    }
+
+    this.setData({
+      teams: newTeams,
+      teamAssignments: newAssignments
+    })
+
+    this.saveTeamConfig()
+    this.saveTeamAssignments()
+  },
+
+  // 自动分队（随机均匀分配）
+  autoAssignTeams: function() {
+    const that = this
+    const { signups, teams } = this.data
+    if (signups.length === 0) {
+      wx.showToast({ title: '暂无报名人员', icon: 'none' })
+      return
+    }
+    if (teams.length === 0) {
+      wx.showToast({ title: '请先创建队伍', icon: 'none' })
+      return
+    }
+
+    wx.showModal({
+      title: '自动分队',
+      content: '将随机把报名人员分配到各队伍，确定执行？',
+      confirmColor: '#dc2626',
+      success: function(res) {
+        if (res.confirm) {
+          // Fisher-Yates 洗牌算法
+          const shuffled = [...signups]
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1))
+            const temp = shuffled[i]
+            shuffled[i] = shuffled[j]
+            shuffled[j] = temp
+          }
+
+          const newAssignments = {}
+          shuffled.forEach((player, index) => {
+            const key = player.userId || player.nickName
+            const teamIndex = index % teams.length
+            newAssignments[key] = teamIndex
+          })
+
+          that.setData({ teamAssignments: newAssignments })
+          that.updateTeamPlayers()
+          that.saveTeamAssignments()
+          wx.showToast({ title: '自动分队完成', icon: 'success' })
+        }
+      }
+    })
+  },
+
+  // 保存队伍配置
+  saveTeamConfig: function() {
+    const that = this
+    const activityId = that.data.activity._id || that.data.activity.id
+    if (!activityId) return
+
+    db.collection('activities').doc(activityId).update({
+      data: {
+        teams: that.data.teams
+      },
+      success: function() {
+        // 保存成功
+      },
+      fail: function() {
+        wx.showToast({ title: '保存队伍配置失败', icon: 'none' })
+      }
+    })
+  },
+
+  // 保存分队分配
+  saveTeamAssignments: function() {
+    const that = this
+    const activityId = that.data.activity._id || that.data.activity.id
+    if (!activityId) return
+
+    db.collection('activities').doc(activityId).update({
+      data: {
+        teamAssignments: that.data.teamAssignments
+      },
+      success: function() {
+        // 保存成功
+      },
+      fail: function() {
+        wx.showToast({ title: '保存分队失败', icon: 'none' })
+      }
+    })
+  },
+
+  // 更新队伍球员列表（用于WXML渲染）
+  updateTeamPlayers: function() {
+    const { signups, teams, teamAssignments } = this.data
+    const teamPlayersList = []
+    for (let i = 0; i < teams.length; i++) {
+      const players = signups.filter(s => {
+        const key = s.userId || s.nickName
+        return teamAssignments[key] === i
+      })
+      teamPlayersList.push({
+        teamIndex: i,
+        teamName: teams[i].name,
+        teamColor: teams[i].color,
+        players: players
+      })
+    }
+    const unassignedPlayers = signups.filter(s => {
+      const key = s.userId || s.nickName
+      return teamAssignments[key] === undefined || teamAssignments[key] === -1
+    })
+    this.setData({ teamPlayersList, unassignedPlayers })
+  },
+
+  // 输入新队伍名称
+  onNewTeamNameInput: function(e) {
+    this.setData({ newTeamName: e.detail.value })
   }
 })

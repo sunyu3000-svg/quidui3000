@@ -102,6 +102,140 @@
     </view>
   </view>
 
+  <!-- 分队区域（仅活动类型为踢球时显示） -->
+  <view class="teams-section" wx:if="{{(activity.activityType === '踢球' || activity.title === '踢球') && signups.length > 0}}">
+    <view class="teams-header">
+      <text class="teams-title">分队</text>
+      <view class="teams-actions" wx:if="{{isAdmin}}">
+        <text class="team-action-btn" bindtap="autoAssignTeams">自动分队</text>
+        <text class="team-action-btn" bindtap="showTeamManager">管理队伍</text>
+      </view>
+    </view>
+
+    <!-- 各队伍 -->
+    <view class="team-list">
+      <view class="team-card" wx:for="{{teamPlayersList}}" wx:key="teamIndex">
+        <view class="team-header-bar">
+          <view class="team-color-dot" style="background-color: {{item.teamColor}};"></view>
+          <text class="team-name">{{item.teamName}}</text>
+          <text class="team-count">{{item.players.length}}人</text>
+        </view>
+        <view class="team-players">
+          <view 
+            class="team-player-item" 
+            wx:for="{{item.players}}" 
+            wx:key="index"
+            wx:for-item="player"
+            bindtap="onTeamPlayerTap"
+            catchlongpress="onTeamPlayerLongPress"
+            data-player="{{player}}"
+          >
+            <view class="team-avatar-wrapper">
+              <image 
+                wx:if="{{player.avatarUrl && player.avatarUrl.trim()}}" 
+                class="team-player-avatar" 
+                src="{{player.avatarUrl}}" 
+                mode="aspectFill"
+              />
+              <view wx:else class="team-player-avatar default-avatar">
+                <text class="team-avatar-text">{{player.nickName ? player.nickName.charAt(0) : '?'}}</text>
+              </view>
+            </view>
+            <text class="team-player-name">{{player.nickName || '未知'}}</text>
+          </view>
+          <view class="team-empty" wx:if="{{item.players.length === 0}}">
+            <text class="team-empty-text">暂无成员</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 未分配球员 -->
+    <view class="team-card unassigned-card" wx:if="{{unassignedPlayers.length > 0}}">
+      <view class="team-header-bar">
+        <view class="team-color-dot" style="background-color: #999;"></view>
+        <text class="team-name">未分配</text>
+        <text class="team-count">{{unassignedPlayers.length}}人</text>
+      </view>
+      <view class="team-players">
+        <view 
+          class="team-player-item" 
+          wx:for="{{unassignedPlayers}}" 
+          wx:key="index"
+          wx:for-item="player"
+          bindtap="onTeamPlayerTap"
+          catchlongpress="onTeamPlayerLongPress"
+          data-player="{{player}}"
+        >
+          <view class="team-avatar-wrapper">
+            <image 
+              wx:if="{{player.avatarUrl && player.avatarUrl.trim()}}" 
+              class="team-player-avatar" 
+              src="{{player.avatarUrl}}" 
+              mode="aspectFill"
+            />
+            <view wx:else class="team-player-avatar default-avatar">
+              <text class="team-avatar-text">{{player.nickName ? player.nickName.charAt(0) : '?'}}</text>
+            </view>
+          </view>
+          <text class="team-player-name">{{player.nickName || '未知'}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 队伍选择弹窗 -->
+  <view class="modal-overlay" wx:if="{{showTeamPicker}}" bindtap="hideTeamPicker">
+    <view class="modal-content team-picker" catchtap="stopPropagation">
+      <text class="modal-title">选择队伍</text>
+      <view class="team-picker-list">
+        <view class="team-picker-item" bindtap="assignToTeam" data-index="-1">
+          <view class="team-picker-dot" style="background-color: #999;"></view>
+          <text class="team-picker-name">未分配</text>
+        </view>
+        <view 
+          class="team-picker-item" 
+          wx:for="{{teams}}" 
+          wx:key="index"
+          bindtap="assignToTeam"
+          data-index="{{index}}"
+        >
+          <view class="team-picker-dot" style="background-color: {{item.color}};"></view>
+          <text class="team-picker-name">{{item.name}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 队伍管理弹窗 -->
+  <view class="modal-overlay" wx:if="{{showTeamManager}}" bindtap="hideTeamManager">
+    <view class="modal-content team-manager" catchtap="stopPropagation">
+      <text class="modal-title">管理队伍</text>
+      <view class="team-manager-list">
+        <view class="team-manager-item" wx:for="{{teams}}" wx:key="index">
+          <view class="team-manager-dot" style="background-color: {{item.color}};"></view>
+          <text class="team-manager-name">{{item.name}}</text>
+          <text 
+            class="team-manager-delete" 
+            wx:if="{{teams.length > 1}}"
+            bindtap="removeTeam"
+            data-index="{{index}}"
+          >删除</text>
+        </view>
+      </view>
+      <view class="team-add-row">
+        <input 
+          class="team-add-input" 
+          placeholder="输入新队伍名称" 
+          value="{{newTeamName}}"
+          bindinput="onNewTeamNameInput"
+          maxlength="10"
+        />
+        <text class="team-add-btn" bindtap="addTeam">添加</text>
+      </view>
+    </view>
+  </view>
+
   <!-- 评论区 -->
   <view class="comments-section">
     <view class="comments-header">
