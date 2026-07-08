@@ -111,7 +111,7 @@ Page({
     wx.cloud.callFunction({
       name: 'getOpenId',
       success: function(res) {
-        const openid = res.result.openid
+        const openid = res.result && res.result.openid
         if (!openid) return
         
         // 更新或创建用户在线状态记录
@@ -135,8 +135,14 @@ Page({
                 }
               })
             }
+          },
+          fail: function() {
+            // visitors 查询失败，静默处理
           }
         })
+      },
+      fail: function() {
+        // getOpenId 云函数调用失败，静默处理
       }
     })
   },
@@ -190,9 +196,16 @@ Page({
     this._loadStatsTimeout = setTimeout(function() {
       that._isLoadingStats = false
       that.setData({ loading: false })
-    }, 10000)
+    }, 5000)
     
-    that.loadActivityStats()
+    try {
+      that.loadActivityStats()
+    } catch (e) {
+      // 如果 loadActivityStats 抛出同步错误，立即释放锁
+      clearTimeout(that._loadStatsTimeout)
+      that._isLoadingStats = false
+      that.setData({ loading: false })
+    }
   },
   
   // 加载活动统计数据
@@ -201,8 +214,7 @@ Page({
     const now = new Date()
     
     // 查询所有活动，不做日期限制，确保历史活动也能被统计
-    db.collection('activities').limit(500).get({
-      timeout: 15000,
+    db.collection('activities').limit(100).get({
       success: function(res) {
         const allActivities = res.data || []
         const dayOfWeek = now.getDay()
@@ -272,9 +284,7 @@ Page({
           return `${year}-${month}-${day}`
         }
         
-        // 统计总活动数
-        that.setData({ 'stats.totalActivities': allActivities.length })
-        
+        // 统计总活动数、本周活动数、进行中活动数，合并 setData 减少渲染
         const weeklyActivities = allActivities.filter(item => {
           const dateRaw = item.date || item.createTime || item._createTime
           if (!dateRaw) return false
@@ -283,14 +293,7 @@ Page({
           return activityDate >= weekStart && activityDate <= weekEnd
         })
         
-        // 更新本周活动统计
-        that.setData({ 
-          'stats.weeklyActivity': weeklyActivities.length
-        })
-        
-        // 统计进行中的活动（status=active 或 status为空，且日期未过）
         const ongoingActivities = allActivities.filter(a => {
-          // status 为 'active' 或为空/undefined/null
           if (a.status && a.status !== 'active') return false
           const dateRaw = a.date || a.createTime || a._createTime
           if (!dateRaw) return false
@@ -298,7 +301,12 @@ Page({
           if (!nd) return false
           return nd >= today
         }).length
-        that.setData({ 'stats.ongoingActivities': ongoingActivities })
+        
+        that.setData({
+          'stats.totalActivities': allActivities.length,
+          'stats.weeklyActivity': weeklyActivities.length,
+          'stats.ongoingActivities': ongoingActivities
+        })
         
         that.loadWeeklySignupCount(weeklyActivities)
         
@@ -317,10 +325,16 @@ Page({
         that.loadCurrentActivity(allActivities)
         that.loadWeeklyTrendData(allActivities)
         that.loadMonthlyData(allActivities)
-        that.loadActivityTypeData()
-        that.loadTopPlayersFromDatabase()
-        that.loadTotalFees()
-        that.loadDoveRankings()
+        
+        // 延迟加载非关键数据，减少并发查询压力
+        setTimeout(function() {
+          that.loadActivityTypeData()
+          that.loadTopPlayersFromDatabase()
+        }, 300)
+        setTimeout(function() {
+          that.loadTotalFees()
+          that.loadDoveRankings()
+        }, 600)
         
         // 触发统计数字滚动动画
         setTimeout(() => {
@@ -378,7 +392,7 @@ Page({
         ? { activityId: activityIds[0] }
         : { activityId: db.command.in(activityIds) }
       
-      db.collection('signups').where(query).limit(500).get({
+      db.collection('signups').where(query).limit(100).get({
         timeout: 5000,
         success: function(res) {
           const allSignups = res.data || []
@@ -405,8 +419,7 @@ Page({
 loadActivityTypeData: function() {
   const that = this
   
-  db.collection('activities').limit(500).get({
-    timeout: 15000,
+  db.collection('activities').limit(100).get({
     success: function(res) {
       const activities = res.data || []
       
@@ -528,8 +541,7 @@ loadActivityTypeData: function() {
 loadTopPlayersFromDatabase: function() {
   const that = this
   
-  db.collection('signups').limit(200).get({
-    timeout: 15000,
+  db.collection('signups').limit(100).get({
     success: function(res) {
       const signups = res.data || []
       
@@ -808,8 +820,7 @@ loadTopPlayersFromDatabase: function() {
   loadTotalFees: function() {
     const that = this
     
-    db.collection('records').limit(500).get({
-      timeout: 15000,
+    db.collection('records').limit(100).get({
       success: function(res) {
         let totalIncome = 0
         let totalExpense = 0
@@ -1054,7 +1065,6 @@ loadTopPlayersFromDatabase: function() {
   loadDoveRankings: function() {
     const that = this
     db.collection('doves').limit(100).get({
-      timeout: 15000,
       success: function(res) {
         const doves = res && res.data ? res.data : []
         const userMap = new Map()
