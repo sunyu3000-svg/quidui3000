@@ -1,4 +1,10 @@
 <view class="container">
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
   <!-- 顶部栏 -->
   <view class="top-bar">
     <view class="club-name-bar">

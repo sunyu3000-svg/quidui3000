@@ -5,6 +5,7 @@ Page({
     isAdmin: true,  // 默认超级管理员
     seasonName: '厦门天涯足球俱乐部',
     currentActivity: null,  // 当前活动主题
+    loading: false,
     
     stats: {
       totalActivities: 0,
@@ -184,6 +185,13 @@ Page({
     const that = this
     this.setData({ loading: true })
     
+    // 添加超时保险，防止网络异常导致 loading 一直显示
+    if (this._loadStatsTimeout) clearTimeout(this._loadStatsTimeout)
+    this._loadStatsTimeout = setTimeout(function() {
+      that._isLoadingStats = false
+      that.setData({ loading: false })
+    }, 10000)
+    
     that.loadActivityStats()
   },
   
@@ -318,11 +326,14 @@ Page({
         setTimeout(() => {
           that.animateStatsCards()
         }, 400)
+        clearTimeout(that._loadStatsTimeout)
         that._isLoadingStats = false
+        that.setData({ loading: false })
       },
       fail: function() {
-        // 查询失败，使用默认值
+        clearTimeout(that._loadStatsTimeout)
         that._isLoadingStats = false
+        that.setData({ loading: false })
       }
     })
   },
